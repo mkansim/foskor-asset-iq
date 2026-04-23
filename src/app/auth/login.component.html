@@ -1,0 +1,25 @@
+<section class="login-page">
+  <div class="login-panel">
+    <div class="login-brand">
+      <img src="/foskor.png" alt="Foskor logo" class="login-logo" />
+      <div>
+        <p class="brand-eyebrow">Asset IQ</p>
+        <h1>Welcome back</h1>
+      </div>
+    </div>
+
+    <p class="login-copy">Access your maintenance dashboard. Use your credentials to continue.</p>
+
+    <form class="login-form" (ngSubmit)="login()">
+      <label for="email">Email</label>
+      <input id="email" type="email" [(ngModel)]="email" name="email" placeholder="you@example.com" required />
+
+      <label for="password">Password</label>
+      <input id="password" type="password" [(ngModel)]="password" name="password" placeholder="Enter your password" required />
+
+      <button class="primary-button" type="submit">Sign in</button>
+    </form>
+
+    <button class="link-button" type="button" (click)="resetPassword()">Reset password</button>
+  </div>
+</section>

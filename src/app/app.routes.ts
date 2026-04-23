@@ -2,6 +2,7 @@
 import { IssuesComponent } from './reports/issues/issues.component';
 import { RaiseIssueComponent } from './reports/raise-issue/raise-issue.component';
 import { IssueListComponent } from './reports/issue-list/issue-list.component';
+import { ViewIssueComponent } from './reports/view-issue/view-issue.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/reports', pathMatch: 'full' },
@@ -9,5 +10,6 @@ export const routes: Routes = [
   { path: 'issues', component: IssueListComponent },
   { path: 'overview', component: IssuesComponent },
   { path: 'raise-issue', component: RaiseIssueComponent },
+  { path: 'view-issue', component: ViewIssueComponent },
   { path: '**', redirectTo: '/reports' }
 ];

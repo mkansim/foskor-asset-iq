@@ -58,6 +58,7 @@
           <th (click)="onSort('status')" class="sortable">
             Status <span class="sort-icon">{{ getSortIcon('status') }}</span>
           </th>
+          <th class="actions-column">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -76,6 +77,13 @@
             <span class="status-badge" [class]="'status-' + issue.status.toLowerCase().replace(' ', '-')">
               {{ issue.status }}
             </span>
+          </td>
+          <td class="actions-cell">
+            <div class="action-buttons">
+              <button class="action-button view" title="View issue" (click)="viewIssue(issue)">👁️</button>
+              <button class="action-button edit" title="Update issue" (click)="updateIssue(issue)">✏️</button>
+              <button class="action-button delete" title="Delete issue" (click)="deleteIssue(issue)">🗑️</button>
+            </div>
           </td>
         </tr>
       </tbody>

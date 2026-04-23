@@ -149,12 +149,48 @@ h2 {
   color: #0f172a;
 }
 
-.issue-text {
-  max-width: 250px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+  .actions-column {
+    width: 140px;
+  }
+
+  .actions-cell {
+    white-space: nowrap;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .action-button {
+    width: 2.4rem;
+    height: 2.4rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.85rem;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .action-button:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+  }
+
+  .action-button.delete {
+    color: #b91c1c;
+  }
+
+  .action-button.edit {
+    color: #2563eb;
+  }
+
+  .action-button.view {
+    color: #0f172a;
+  }
+
 
 .criticality-badge {
   display: inline-block;

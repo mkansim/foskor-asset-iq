@@ -1,10 +1,12 @@
 <section class="raise-issue-page">
   <div class="page-header">
     <div>
-      <p class="eyebrow">New maintenance issue</p>
-      <h2>Raise Issue</h2>
+      <p class="eyebrow">{{ isEditMode ? 'Edit maintenance issue' : 'New maintenance issue' }}</p>
+      <h2>{{ isEditMode ? 'Edit Issue' : 'Raise Issue' }}</h2>
     </div>
-    <p class="page-copy">Use the form below to capture the maintenance issue details.</p>
+    <p class="page-copy">
+      {{ isEditMode ? 'Update the maintenance issue details below.' : 'Use the form below to capture the maintenance issue details.' }}
+    </p>
   </div>
 
   <form class="form-grid" (ngSubmit)="onSubmit()">
@@ -73,6 +75,8 @@
   </form>
 
   <div class="form-actions">
-    <button class="primary-button" type="button" (click)="onSubmit()">Submit issue</button>
+    <button class="primary-button" type="button" (click)="onSubmit()">
+      {{ isEditMode ? 'Update issue' : 'Submit issue' }}
+    </button>
   </div>
 </section>
