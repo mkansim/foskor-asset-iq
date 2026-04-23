@@ -1,0 +1,275 @@
+.issue-list-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+h2 {
+  margin: 0;
+  font-size: 2rem;
+  color: #0f172a;
+}
+
+.page-copy {
+  margin: 0;
+  color: #475569;
+  max-width: 52rem;
+}
+
+.list-controls {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.search-box {
+  display: flex;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 280px;
+}
+
+.search-box input {
+  flex: 1;
+  padding: 0.9rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.85rem;
+  background: #f8fafc;
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.search-button {
+  padding: 0.9rem 1.5rem;
+  border: none;
+  border-radius: 0.85rem;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.search-button:hover {
+  background: #1d4ed8;
+}
+
+.filter-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.filter-section label {
+  font-size: 0.95rem;
+  color: #334155;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.filter-section select {
+  padding: 0.9rem 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.85rem;
+  background: #f8fafc;
+  color: #0f172a;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+}
+
+.issues-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+}
+
+.issues-table thead {
+  background: #f1f5f9;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.issues-table th {
+  padding: 1.25rem 1.5rem;
+  text-align: left;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #334155;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.issues-table th.sortable {
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.issues-table th.sortable:hover {
+  background: #e2e8f0;
+}
+
+.sort-icon {
+  margin-left: 0.5rem;
+  opacity: 0.6;
+  font-size: 0.85rem;
+}
+
+.issues-table tbody tr {
+  border-bottom: 1px solid #e2e8f0;
+  transition: background 0.2s ease;
+}
+
+.issues-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.issues-table td {
+  padding: 1rem 1.5rem;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.issue-text {
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.criticality-badge {
+  display: inline-block;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.criticality-badge.crit-high {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.criticality-badge.crit-medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.criticality-badge.crit-low {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.status-badge.status-open {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-badge.status-in-progress {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.status-resolved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.status-closed {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+}
+
+.pagination button {
+  padding: 0.75rem 1.25rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.85rem;
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.pagination button:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-size: 0.95rem;
+  color: #475569;
+  white-space: nowrap;
+}
+
+@media (max-width: 980px) {
+  .list-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-box {
+    flex-direction: column;
+  }
+
+  .filter-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-section select {
+    width: 100%;
+  }
+
+  .table-wrapper {
+    font-size: 0.85rem;
+  }
+
+  .issues-table th,
+  .issues-table td {
+    padding: 0.75rem 1rem;
+  }
+
+  .issue-text {
+    max-width: 150px;
+  }
+}

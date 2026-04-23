@@ -1,0 +1,78 @@
+<section class="raise-issue-page">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">New maintenance issue</p>
+      <h2>Raise Issue</h2>
+    </div>
+    <p class="page-copy">Use the form below to capture the maintenance issue details.</p>
+  </div>
+
+  <form class="form-grid" (ngSubmit)="onSubmit()">
+    <div class="form-card">
+      <label for="section">Section</label>
+      <input id="section" name="section" type="text" [(ngModel)]="issue.section" />
+
+      <label for="equipment">Equipment</label>
+      <input id="equipment" name="equipment" type="text" [(ngModel)]="issue.equipment" />
+
+      <label for="problemIssue">Problem / Issue</label>
+      <textarea id="problemIssue" name="problemIssue" rows="4" [(ngModel)]="issue.problemIssue"></textarea>
+
+      <label for="source">Source</label>
+      <input id="source" name="source" type="text" [(ngModel)]="issue.source" />
+
+      <label for="cause">Cause</label>
+      <textarea id="cause" name="cause" rows="3" [(ngModel)]="issue.cause"></textarea>
+
+      <label for="action">Action</label>
+      <textarea id="action" name="action" rows="3" [(ngModel)]="issue.action"></textarea>
+    </div>
+
+    <div class="form-card">
+      <label for="criticality">Criticality</label>
+      <input id="criticality" name="criticality" type="text" [(ngModel)]="issue.criticality" />
+
+      <label for="responsiblePerson">Responsible Person</label>
+      <input id="responsiblePerson" name="responsiblePerson" type="text" [(ngModel)]="issue.responsiblePerson" />
+
+      <label for="dueDate">Due Date</label>
+      <input
+        id="dueDate"
+        name="dueDate"
+        type="date"
+        [ngModel]="issue.dueDate | date:'yyyy-MM-dd'"
+        (ngModelChange)="onDueDateChange($event)"
+      />
+
+      <label class="checkbox-row">
+        <input
+          id="totalPlantStoppageRequired"
+          name="totalPlantStoppageRequired"
+          type="checkbox"
+          [(ngModel)]="issue.totalPlantStoppageRequired"
+        />
+        Total plant stoppage required
+      </label>
+
+      <label for="timeRequiredHours">Time Required (hours)</label>
+      <input
+        id="timeRequiredHours"
+        name="timeRequiredHours"
+        type="number"
+        step="0.25"
+        min="0"
+        [(ngModel)]="issue.timeRequiredHours"
+      />
+
+      <label for="status">Status</label>
+      <input id="status" name="status" type="text" [(ngModel)]="issue.status" />
+
+      <label for="comments">Comments</label>
+      <textarea id="comments" name="comments" rows="4" [(ngModel)]="issue.comments"></textarea>
+    </div>
+  </form>
+
+  <div class="form-actions">
+    <button class="primary-button" type="button" (click)="onSubmit()">Submit issue</button>
+  </div>
+</section>

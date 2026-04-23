@@ -1,0 +1,56 @@
+﻿<div class="app-shell">
+  <aside class="side-nav" [class.open]="menuOpen">
+    <div class="brand">
+      <img src="/foskor.png" alt="Foskor" class="sidebar-logo" />
+      <p class="brand-label">Asset IQ</p>
+    </div>
+
+    <nav class="nav-links" aria-label="Primary navigation">
+      <a routerLink="/reports" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        Maintenance report
+      </a>
+      <a routerLink="/issues" routerLinkActive="active">
+        Issues
+      </a>
+      <a routerLink="/overview" routerLinkActive="active">
+        Overview
+      </a>
+      <a routerLink="/raise-issue" routerLinkActive="active">
+        Raise Issue
+      </a>
+    </nav>
+
+    <div class="nav-footer">
+      <p>Rhixete Engineering Pty(Ltd)-2026</p>
+    </div>
+  </aside>
+
+  <div class="backdrop" [class.visible]="menuOpen" (click)="toggleMenu()"></div>
+
+  <div class="main-area">
+    <header class="top-nav">
+      <div class="top-left">
+        <button class="menu-button" type="button" aria-label="Toggle navigation" (click)="toggleMenu()">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div class="top-heading">
+          <p class="top-eyebrow">Operations</p>
+          <h1>Maintenance dashboard</h1>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="logout-button" type="button" aria-label="Logout">
+          Logout
+        </button>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="page-frame">
+        <router-outlet></router-outlet>
+      </div>
+    </main>
+  </div>
+</div>

@@ -1,0 +1,96 @@
+<section class="issue-list-page">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">All maintenance issues</p>
+      <h2>Issue List</h2>
+    </div>
+    <p class="page-copy">View, search, and manage all maintenance issues.</p>
+  </div>
+
+  <div class="list-controls">
+    <div class="search-box">
+      <input
+        type="text"
+        placeholder="Search by section, equipment, issue, or person..."
+        [(ngModel)]="searchText"
+        (keyup.enter)="onSearch()"
+      />
+      <button class="search-button" (click)="onSearch()">Search</button>
+    </div>
+
+    <div class="filter-section">
+      <label for="statusFilter">Filter by Status:</label>
+      <select
+        id="statusFilter"
+        [(ngModel)]="statusFilter"
+        (ngModelChange)="onStatusFilterChange()"
+      >
+        <option value="">All Statuses</option>
+        <option *ngFor="let status of statusOptions" [value]="status">
+          {{ status }}
+        </option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="issues-table">
+      <thead>
+        <tr>
+          <th (click)="onSort('section')" class="sortable">
+            Section <span class="sort-icon">{{ getSortIcon('section') }}</span>
+          </th>
+          <th (click)="onSort('equipment')" class="sortable">
+            Equipment <span class="sort-icon">{{ getSortIcon('equipment') }}</span>
+          </th>
+          <th (click)="onSort('problemIssue')" class="sortable">
+            Problem / Issue <span class="sort-icon">{{ getSortIcon('problemIssue') }}</span>
+          </th>
+          <th (click)="onSort('criticality')" class="sortable">
+            Criticality <span class="sort-icon">{{ getSortIcon('criticality') }}</span>
+          </th>
+          <th (click)="onSort('responsiblePerson')" class="sortable">
+            Responsible <span class="sort-icon">{{ getSortIcon('responsiblePerson') }}</span>
+          </th>
+          <th (click)="onSort('dueDate')" class="sortable">
+            Due Date <span class="sort-icon">{{ getSortIcon('dueDate') }}</span>
+          </th>
+          <th (click)="onSort('status')" class="sortable">
+            Status <span class="sort-icon">{{ getSortIcon('status') }}</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let issue of filteredIssues" [class]="'status-' + issue.status.toLowerCase().replace(' ', '-')">
+          <td>{{ issue.section }}</td>
+          <td>{{ issue.equipment }}</td>
+          <td class="issue-text">{{ issue.problemIssue }}</td>
+          <td>
+            <span class="criticality-badge" [class]="'crit-' + issue.criticality.toLowerCase()">
+              {{ issue.criticality }}
+            </span>
+          </td>
+          <td>{{ issue.responsiblePerson }}</td>
+          <td>{{ issue.dueDate | date: 'MMM d, y' }}</td>
+          <td>
+            <span class="status-badge" [class]="'status-' + issue.status.toLowerCase().replace(' ', '-')">
+              {{ issue.status }}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination">
+    <button [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+      Previous
+    </button>
+    <div class="page-info">
+      Page {{ currentPage }} of {{ totalPages }} ({{ totalItems }} total items)
+    </div>
+    <button [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+      Next
+    </button>
+  </div>
+</section>

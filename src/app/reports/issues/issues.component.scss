@@ -1,0 +1,91 @@
+:host {
+  display: block;
+}
+
+.report-page {
+  display: grid;
+  gap: 1.5rem;
+  padding: 0;
+  color: #0f172a;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.5rem;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.78rem;
+}
+
+h2 {
+  margin: 0;
+  font-size: clamp(2rem, 2.2vw, 2.5rem);
+  color: #0f172a;
+}
+
+.description {
+  margin: 0.9rem 0 0;
+  max-width: 58rem;
+  line-height: 1.75;
+  color: #64748b;
+}
+
+.report-panel {
+  display: grid;
+  gap: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.08);
+}
+
+.report-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+.report-meta a {
+  color: #3366ff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.iframe-shell {
+  min-height: 72vh;
+  background: #f8fafc;
+}
+
+iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 640px;
+  border: 0;
+  display: block;
+}
+
+@media (max-width: 900px) {
+  .report-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .iframe-shell {
+    min-height: 520px;
+  }
+}
