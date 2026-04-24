@@ -30,8 +30,14 @@ export class IssueListComponent implements OnInit {
   constructor(private issueService: MaintenanceIssueService, private router: Router) {}
 
   ngOnInit(): void {
-    this.issues = this.issueService.getIssues();
-    this.applyFiltersAndSort();
+    this.loadIssues();
+  }
+
+  loadIssues(): void {
+      this.issueService.getIssues().subscribe(issues => {
+      this.issues = issues;
+      this.applyFiltersAndSort();
+    });
   }
 
   applyFiltersAndSort(): void {
@@ -143,47 +149,32 @@ export class IssueListComponent implements OnInit {
   }
 
   viewIssue(issue: MaintenanceIssue): void {
-    const issueIndex = this.issues.indexOf(issue);
-    if (issueIndex === -1) {
-      return;
-    }
-
     this.router.navigate(['/view-issue'], {
       state: {
         issue,
-        index: issueIndex
+        id: issue.id
       }
     });
   }
 
   updateIssue(issue: MaintenanceIssue): void {
-    const issueIndex = this.issues.indexOf(issue);
-    if (issueIndex === -1) {
-      return;
-    }
-
     this.router.navigate(['/raise-issue'], {
       state: {
         issue,
-        index: issueIndex,
+        id: issue.id,
         mode: 'edit'
       }
     });
   }
 
   deleteIssue(issue: MaintenanceIssue): void {
-    const issueIndex = this.issues.indexOf(issue);
-    if (issueIndex === -1) {
-      return;
-    }
-
     const confirmed = window.confirm(`Delete issue for ${issue.equipment}?`);
     if (!confirmed) {
       return;
     }
 
-    this.issueService.deleteIssue(issueIndex);
-    this.issues = this.issueService.getIssues();
-    this.applyFiltersAndSort();
+    this.issueService.deleteIssue(issue.id!).subscribe(() => {
+      this.loadIssues();
+    });
   }
 }

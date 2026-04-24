@@ -31,20 +31,20 @@ export class RaiseIssueComponent implements OnInit {
   };
 
   isEditMode = false;
-  editIndex: number | null = null;
+  editId: number | null = null;
 
   constructor(private router: Router, private issueService: MaintenanceIssueService) {}
 
   ngOnInit(): void {
     const state = window.history.state as {
       issue?: MaintenanceIssue;
-      index?: number;
+      id?: number;
       mode?: string;
     };
 
-    if (state?.mode === 'edit' && state.issue !== undefined && state.index !== undefined) {
+    if (state?.mode === 'edit' && state.issue !== undefined && state.id !== undefined) {
       this.isEditMode = true;
-      this.editIndex = state.index;
+      this.editId = state.id;
       this.issue = {
         ...state.issue,
         dueDate: state.issue.dueDate ? new Date(state.issue.dueDate) : new Date()
@@ -53,16 +53,18 @@ export class RaiseIssueComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.isEditMode && this.editIndex !== null) {
-      this.issueService.updateIssue(this.editIndex, this.issue);
-      alert('Maintenance issue updated successfully.');
+    if (this.isEditMode && this.editId !== null) {
+      this.issueService.updateIssue(this.editId, this.issue).subscribe(() => {
+        alert('Maintenance issue updated successfully.');
+        this.router.navigate(['/issues']);
+      });
     } else {
       this.issue.createdAt = new Date();
-      this.issueService.addIssue(this.issue);
-      alert('Maintenance issue submitted successfully.');
+      this.issueService.createIssue(this.issue).subscribe(() => {
+        alert('Maintenance issue submitted successfully.');
+        this.router.navigate(['/issues']);
+      });
     }
-
-    this.router.navigate(['/issues']);
   }
 
   onDueDateChange(value: string): void {

@@ -1,4 +1,5 @@
 export interface MaintenanceIssue {
+  id?: number;
   section: string;
   equipment: string;
   problemIssue: string;
