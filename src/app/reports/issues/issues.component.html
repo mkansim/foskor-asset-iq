@@ -11,12 +11,9 @@
       <span>Maintenance report</span>
     </div>
     <div class="iframe-shell">
-      <iframe
-        src="https://app.powerbi.com/groups/me/reports/b3a13b24-bf65-4ea2-8238-b9e1b6354178/6fcf47e5b120a6c76892?experience=power-bi"
-        title="Power BI report"
-        loading="lazy"
-        allowfullscreen
-      ></iframe>
+      <div *ngIf="loading" class="embed-loading">Loading Power BI report...</div>
+      <div *ngIf="error" class="embed-error">{{ error }}</div>
+      <div #embedContainer class="powerbi-embed-container"></div>
     </div>
   </div>
 </section>

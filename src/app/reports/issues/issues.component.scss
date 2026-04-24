@@ -69,6 +69,23 @@ h2 {
 .iframe-shell {
   min-height: 72vh;
   background: #f8fafc;
+  position: relative;
+}
+
+.powerbi-embed-container {
+  width: 100%;
+  min-height: 640px;
+}
+
+.embed-loading,
+.embed-error {
+  padding: 1.5rem;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.embed-error {
+  color: #b91c1c;
 }
 
 iframe {

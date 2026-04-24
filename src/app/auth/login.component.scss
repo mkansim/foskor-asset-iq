@@ -9,12 +9,13 @@
   display: grid;
   place-items: center;
   min-height: 100vh;
-  padding: 2rem;
+  padding: 1rem;
 }
 
 .login-panel {
-  width: min(520px, 100%);
-  padding: 2rem;
+  width: min(420px, 100%);
+  max-width: 420px;
+  padding: 2.5rem;
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 1.5rem;
@@ -29,18 +30,19 @@
 }
 
 .login-logo {
-  width: 4.5rem;
-  height: 4.5rem;
+  width: 6.75rem;
+  height: 6.75rem;
   object-fit: contain;
   border-radius: 1rem;
 }
 
 .brand-eyebrow {
   margin: 0;
-  font-size: 0.75rem;
-  letter-spacing: 0.24em;
+  font-size: 1.125rem;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #64748b;
+  font-weight: 700;
 }
 
 .login-panel h1 {
@@ -73,6 +75,7 @@
   background: #f8fafc;
   color: #0f172a;
   font-size: 1rem;
+  box-sizing: border-box;
 }
 
 .primary-button {
@@ -103,4 +106,10 @@
 
 .link-button:hover {
   text-decoration: underline;
+}
+
+.login-error {
+  margin-top: 0.75rem;
+  color: #b91c1c;
+  font-weight: 600;
 }

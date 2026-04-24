@@ -1,5 +1,5 @@
 ﻿<div class="app-shell">
-  <aside class="side-nav" [class.open]="menuOpen">
+  <aside *ngIf="!hideNavigation" class="side-nav" [class.open]="menuOpen">
     <div class="brand">
       <img src="/foskor.png" alt="Foskor" class="sidebar-logo" />
       <p class="brand-label">Asset IQ</p>
@@ -25,10 +25,10 @@
     </div>
   </aside>
 
-  <div class="backdrop" [class.visible]="menuOpen" (click)="toggleMenu()"></div>
+  <div *ngIf="!hideNavigation" class="backdrop" [class.visible]="menuOpen" (click)="toggleMenu()"></div>
 
   <div class="main-area">
-    <header class="top-nav">
+    <header *ngIf="!hideNavigation" class="top-nav">
       <div class="top-left">
         <button class="menu-button" type="button" aria-label="Toggle navigation" (click)="toggleMenu()">
           <span></span>
@@ -41,7 +41,11 @@
         </div>
       </div>
       <div class="top-actions">
-        <button class="logout-button" type="button" aria-label="Logout">
+        <span *ngIf="isAuthenticated" class="user-info">Logged in as {{ loggedInEmail }}</span>
+        <button *ngIf="!isAuthenticated" class="login-button" type="button" (click)="login()">
+          Login
+        </button>
+        <button *ngIf="isAuthenticated" class="logout-button" type="button" (click)="logout()">
           Logout
         </button>
       </div>

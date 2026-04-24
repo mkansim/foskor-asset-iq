@@ -4,7 +4,6 @@
       <img src="/foskor.png" alt="Foskor logo" class="login-logo" />
       <div>
         <p class="brand-eyebrow">Asset IQ</p>
-        <h1>Welcome back</h1>
       </div>
     </div>
 
@@ -17,7 +16,11 @@
       <label for="password">Password</label>
       <input id="password" type="password" [(ngModel)]="password" name="password" placeholder="Enter your password" required />
 
-      <button class="primary-button" type="submit">Sign in</button>
+      <button class="primary-button" type="submit" [disabled]="loading">
+        {{ loading ? 'Signing in...' : 'Sign in' }}
+      </button>
+
+      <div *ngIf="error" class="login-error">{{ error }}</div>
     </form>
 
     <button class="link-button" type="button" (click)="resetPassword()">Reset password</button>
