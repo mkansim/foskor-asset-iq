@@ -5,6 +5,7 @@ import { IssueListComponent } from './reports/issue-list/issue-list.component';
 import { ViewIssueComponent } from './reports/view-issue/view-issue.component';
 import { LoginComponent } from './auth/login.component';
 import { AuthGuard } from './auth/auth.guard';
+import { ReliabilityKpiDashboardComponent } from './reports/reliability-kpi-dashboard/reliability-kpi-dashboard.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/reports', pathMatch: 'full' },
@@ -14,5 +15,6 @@ export const routes: Routes = [
   { path: 'overview', component: IssuesComponent, canActivate: [AuthGuard] },
   { path: 'raise-issue', component: RaiseIssueComponent, canActivate: [AuthGuard] },
   { path: 'view-issue', component: ViewIssueComponent, canActivate: [AuthGuard] },
+  { path: 'reports/reliability-kpis', component: ReliabilityKpiDashboardComponent, canActivate: [AuthGuard] },
   { path: '**', redirectTo: '/reports' }
 ];

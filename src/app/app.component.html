@@ -9,12 +9,19 @@
       <a routerLink="/reports" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
         Maintenance report
       </a>
+
+      <a routerLink="/reports/reliability-kpis" routerLinkActive="active">
+        Reliability KPI Dashboard
+      </a>
+
       <a routerLink="/issues" routerLinkActive="active">
         Issues
       </a>
+
       <a routerLink="/overview" routerLinkActive="active">
         Overview
       </a>
+
       <a routerLink="/raise-issue" routerLinkActive="active">
         Raise Issue
       </a>
@@ -35,16 +42,22 @@
           <span></span>
           <span></span>
         </button>
+
         <div class="top-heading">
           <p class="top-eyebrow">Operations</p>
           <h1>Maintenance dashboard</h1>
         </div>
       </div>
+
       <div class="top-actions">
-        <span *ngIf="isAuthenticated" class="user-info">Logged in as {{ loggedInEmail }}</span>
+        <span *ngIf="isAuthenticated" class="user-info">
+          Logged in as {{ loggedInEmail }}
+        </span>
+
         <button *ngIf="!isAuthenticated" class="login-button" type="button" (click)="login()">
           Login
         </button>
+
         <button *ngIf="isAuthenticated" class="logout-button" type="button" (click)="logout()">
           Logout
         </button>
