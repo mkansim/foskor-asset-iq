@@ -18,6 +18,7 @@ export class AppComponent implements OnInit, OnDestroy {
   isAuthenticated = false;
   loggedInEmail: string | null = null;
   hideNavigation = false;
+  sidebarCollapsed = false;
 
   private subscription = new Subscription();
 
@@ -55,4 +56,8 @@ export class AppComponent implements OnInit, OnDestroy {
   toggleMenu() {
     this.menuOpen = !this.menuOpen;
   }
+
+  toggleSidebar(): void {
+    this.sidebarCollapsed = !this.sidebarCollapsed;
+}
 }

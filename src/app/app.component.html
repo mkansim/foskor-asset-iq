@@ -1,51 +1,83 @@
-﻿<div class="app-shell">
-  <aside *ngIf="!hideNavigation" class="side-nav" [class.open]="menuOpen">
+﻿<div class="app-shell" [class.sidebar-collapsed]="sidebarCollapsed">
+  <aside
+    *ngIf="!hideNavigation"
+    class="side-nav"
+    [class.open]="menuOpen"
+    [class.collapsed]="sidebarCollapsed"
+  >
     <div class="brand">
       <img src="/foskor.png" alt="Foskor" class="sidebar-logo" />
-      <p class="brand-label">Asset IQ</p>
+
+      <div class="brand-text" *ngIf="!sidebarCollapsed">
+        <p class="brand-label">Asset IQ</p>
+      </div>
     </div>
 
     <nav class="nav-links" aria-label="Primary navigation">
       <a routerLink="/reports" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-        Maintenance report
+        <span class="nav-icon">📋</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Maintenance report</span>
       </a>
 
       <a routerLink="/reports/reliability-kpis" routerLinkActive="active">
-        Reliability KPI Dashboard
+        <span class="nav-icon">📊</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Reliability KPI Dashboard</span>
       </a>
 
       <a routerLink="/issues" routerLinkActive="active">
-        Issues
+        <span class="nav-icon">🛠️</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Issues</span>
       </a>
 
       <a routerLink="/overview" routerLinkActive="active">
-        Overview
+        <span class="nav-icon">🏭</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Overview</span>
       </a>
 
       <a routerLink="/raise-issue" routerLinkActive="active">
-        Raise Issue
+        <span class="nav-icon">➕</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Raise Issue</span>
       </a>
     </nav>
 
-    <div class="nav-footer">
+    <div class="nav-footer" *ngIf="!sidebarCollapsed">
       <p>Rhixete Engineering Pty(Ltd)-2026</p>
     </div>
   </aside>
 
-  <div *ngIf="!hideNavigation" class="backdrop" [class.visible]="menuOpen" (click)="toggleMenu()"></div>
+  <div
+    *ngIf="!hideNavigation"
+    class="backdrop"
+    [class.visible]="menuOpen"
+    (click)="toggleMenu()"
+  ></div>
 
   <div class="main-area">
     <header *ngIf="!hideNavigation" class="top-nav">
       <div class="top-left">
-        <button class="menu-button" type="button" aria-label="Toggle navigation" (click)="toggleMenu()">
+        <button
+          class="menu-button"
+          type="button"
+          aria-label="Toggle navigation"
+          (click)="toggleMenu()"
+        >
           <span></span>
           <span></span>
           <span></span>
         </button>
 
+        <button
+          class="sidebar-toggle-button"
+          type="button"
+          aria-label="Toggle sidebar"
+          (click)="toggleSidebar()"
+        >
+          {{ sidebarCollapsed ? '☰' : '⇤' }}
+        </button>
+
         <div class="top-heading">
           <p class="top-eyebrow">Operations</p>
-          <h1>Maintenance dashboard</h1>
+          <h1>Asset IQ Dashboard</h1>
         </div>
       </div>
 

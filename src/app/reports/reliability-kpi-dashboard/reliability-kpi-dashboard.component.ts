@@ -17,6 +17,9 @@ import {
   registerables
 } from 'chart.js';
 
+import * as ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+
 import { ReliabilityKpiService } from '../../services/reliability-kpi.service';
 import { ActionTrackerService } from '../../services/action-tracker.service';
 
@@ -24,6 +27,14 @@ import { ReliabilityKpi, KpiSummary } from '../../models/reliability-kpi.model';
 import { ActionTracker } from '../../models/action-tracker.model';
 
 Chart.register(...registerables);
+
+type DashboardSection =
+  | 'performance'
+  | 'trend'
+  | 'latest'
+  | 'resources'
+  | 'records'
+  | 'tracker';
 
 @Component({
   selector: 'app-reliability-kpi-dashboard',
@@ -48,6 +59,8 @@ export class ReliabilityKpiDashboardComponent
 
   selectedDepartment = 'Mechanical Workshop';
   selectedActionStatus = '';
+
+  activeSection: DashboardSection = 'performance';
 
   departments: string[] = [
     'Mechanical Workshop',
@@ -83,7 +96,6 @@ export class ReliabilityKpiDashboardComponent
     private reliabilityKpiService: ReliabilityKpiService,
     private actionTrackerService: ActionTrackerService,
     private cdr: ChangeDetectorRef
-
   ) {}
 
   ngOnInit(): void {
@@ -103,19 +115,22 @@ export class ReliabilityKpiDashboardComponent
     this.loading = true;
     this.errorMessage = '';
 
+    this.destroyCharts();
+
     this.reliabilityKpiService
       .getSummaryByDepartment(this.selectedDepartment)
       .subscribe({
         next: result => {
           this.summary = result;
+          this.cdr.detectChanges();
           this.renderChartsWhenReady();
         },
         error: error => {
           console.error(error);
           this.errorMessage = 'Failed to load KPI summary.';
           this.loading = false;
+          this.cdr.detectChanges();
         }
-        
       });
 
     this.reliabilityKpiService
@@ -124,12 +139,14 @@ export class ReliabilityKpiDashboardComponent
         next: result => {
           this.kpiTrend = result;
           this.loading = false;
+          this.cdr.detectChanges();
           this.renderChartsWhenReady();
         },
         error: error => {
           console.error(error);
           this.errorMessage = 'Failed to load KPI trend.';
           this.loading = false;
+          this.cdr.detectChanges();
         }
       });
 
@@ -139,29 +156,46 @@ export class ReliabilityKpiDashboardComponent
         next: result => {
           this.actions = result;
           this.applyActionFilter();
+          this.cdr.detectChanges();
           this.renderChartsWhenReady();
         },
         error: error => {
           console.error(error);
           this.errorMessage = 'Failed to load action tracker.';
+          this.cdr.detectChanges();
         }
       });
-      this.cdr.detectChanges();
-
   }
 
   onDepartmentChange(): void {
+    this.activeSection = 'performance';
     this.loadDashboard();
   }
 
   onActionStatusChange(): void {
     this.applyActionFilter();
+    this.cdr.detectChanges();
     this.renderActionStatusChart();
+  }
+
+  scrollToSection(section: DashboardSection): void {
+    this.activeSection = section;
+
+    const element = document.getElementById(section);
+
+    if (!element) {
+      return;
+    }
+
+    element.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
   }
 
   applyActionFilter(): void {
     if (!this.selectedActionStatus) {
-      this.filteredActions = this.actions;
+      this.filteredActions = [...this.actions];
       return;
     }
 
@@ -228,6 +262,311 @@ export class ReliabilityKpiDashboardComponent
       default:
         return 'status-badge';
     }
+  }
+
+  trackByKpiId(index: number, item: ReliabilityKpi): number {
+    return item.id;
+  }
+
+  trackByActionId(index: number, item: ActionTracker): number {
+    return item.id;
+  }
+
+  async exportDashboardToExcel(): Promise<void> {
+    this.cdr.detectChanges();
+    this.renderChartsWhenReady();
+
+    setTimeout(async () => {
+      const workbook = new ExcelJS.Workbook();
+
+      workbook.creator = 'Asset IQ';
+      workbook.created = new Date();
+
+      const summarySheet = workbook.addWorksheet('KPI Summary');
+      const kpiSheet = workbook.addWorksheet('KPI Records');
+      const actionSheet = workbook.addWorksheet('Action Tracker');
+      const chartsSheet = workbook.addWorksheet('Dashboard Charts');
+
+      this.buildSummarySheet(summarySheet);
+      this.buildKpiRecordsSheet(kpiSheet);
+      this.buildActionTrackerSheet(actionSheet);
+      this.buildChartsSheet(workbook, chartsSheet);
+
+      const buffer = await workbook.xlsx.writeBuffer();
+
+      const fileName = `Reliability_KPI_Report_${this.selectedDepartment.replace(/\s+/g, '_')}_${new Date()
+        .toISOString()
+        .slice(0, 10)}.xlsx`;
+
+      saveAs(
+        new Blob([buffer], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        }),
+        fileName
+      );
+    }, 500);
+  }
+
+  private buildSummarySheet(sheet: ExcelJS.Worksheet): void {
+    sheet.columns = [
+      { header: 'Field', key: 'field', width: 35 },
+      { header: 'Value', key: 'value', width: 35 }
+    ];
+
+    sheet.addRow({ field: 'Department', value: this.selectedDepartment });
+    sheet.addRow({ field: 'Latest Week', value: this.summary?.latestWeek || '-' });
+    sheet.addRow({ field: 'KPI Health Score', value: `${this.latestKpiScore}%` });
+    sheet.addRow({ field: 'Total Actions', value: this.totalActions });
+    sheet.addRow({ field: 'Completed Actions', value: this.completedActions });
+    sheet.addRow({ field: 'Open Actions', value: this.openActions });
+    sheet.addRow({ field: 'Overdue Actions', value: this.overdueActions });
+
+    sheet.addRow([]);
+
+    const kpiHeaderRow = sheet.addRow([
+      'KPI Name',
+      'Value',
+      'Unit',
+      'Target',
+      'Status'
+    ]);
+
+    kpiHeaderRow.font = { bold: true };
+
+    if (this.summary) {
+      this.summary.kpis.forEach(kpi => {
+        sheet.addRow([
+          kpi.name,
+          Number(kpi.value),
+          kpi.unit,
+          kpi.name === 'Backlog Weeks' ? '2 - 4 weeks' : `${kpi.target}%`,
+          kpi.status
+        ]);
+      });
+    }
+
+    this.styleSheetHeader(sheet);
+  }
+
+  private buildKpiRecordsSheet(sheet: ExcelJS.Worksheet): void {
+    sheet.columns = [
+      { header: 'Id', key: 'id', width: 10 },
+      { header: 'Department', key: 'department', width: 28 },
+      { header: 'Week', key: 'week', width: 16 },
+      { header: 'Labour Utilization %', key: 'labourUtilization', width: 24 },
+      { header: 'Schedule Compliance %', key: 'scheduleCompliance', width: 26 },
+      { header: 'Legal Compliance %', key: 'legalCompliance', width: 24 },
+      { header: 'Backlog Weeks', key: 'backlogWeeks', width: 18 },
+      { header: 'Resource Compliance %', key: 'resourceCompliance', width: 26 }
+    ];
+
+    this.kpiTrend.forEach(row => {
+      sheet.addRow({
+        id: row.id,
+        department: row.department,
+        week: row.week,
+        labourUtilization: Number(row.labourUtilization),
+        scheduleCompliance: Number(row.scheduleCompliance),
+        legalCompliance: Number(row.legalCompliance),
+        backlogWeeks: Number(row.backlogWeeks),
+        resourceCompliance: Number(row.resourceCompliance)
+      });
+    });
+
+    this.styleSheetHeader(sheet);
+  }
+
+  private buildActionTrackerSheet(sheet: ExcelJS.Worksheet): void {
+    sheet.columns = [
+      { header: 'Id', key: 'id', width: 10 },
+      { header: 'Department', key: 'department', width: 28 },
+      { header: 'Task', key: 'task', width: 32 },
+      { header: 'Notes', key: 'notes', width: 55 },
+      { header: 'Category', key: 'category', width: 20 },
+      { header: 'Owner', key: 'owner', width: 28 },
+      { header: 'Due Date', key: 'dueDate', width: 18 },
+      { header: 'Status', key: 'status', width: 18 },
+      { header: 'Comments', key: 'comments', width: 55 }
+    ];
+
+    this.filteredActions.forEach(action => {
+      sheet.addRow({
+        id: action.id,
+        department: action.department || '-',
+        task: action.task || '-',
+        notes: action.notes || '-',
+        category: action.category || '-',
+        owner: action.owner || '-',
+        dueDate: action.dueDate ? new Date(action.dueDate) : '-',
+        status: action.status || '-',
+        comments: action.comments || '-'
+      });
+    });
+
+    this.styleSheetHeader(sheet);
+  }
+
+  private buildChartsSheet(
+    workbook: ExcelJS.Workbook,
+    sheet: ExcelJS.Worksheet
+  ): void {
+    sheet.getCell('A1').value = 'Reliability KPI Dashboard Charts';
+    sheet.getCell('A1').font = {
+      bold: true,
+      size: 16,
+      color: { argb: 'FFFFFFFF' }
+    };
+    sheet.getCell('A1').fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF0F172A' }
+    };
+
+    sheet.mergeCells('A1:H1');
+
+    let currentRow = 3;
+
+    currentRow = this.addChartImageToSheet(
+      workbook,
+      sheet,
+      this.kpiTrendChart,
+      'KPI Weekly Trend',
+      currentRow
+    );
+
+    currentRow = this.addChartImageToSheet(
+      workbook,
+      sheet,
+      this.kpiStatusChart,
+      'Latest KPI Status',
+      currentRow
+    );
+
+    currentRow = this.addChartImageToSheet(
+      workbook,
+      sheet,
+      this.backlogChart,
+      'Backlog Weeks vs Target',
+      currentRow
+    );
+
+    currentRow = this.addChartImageToSheet(
+      workbook,
+      sheet,
+      this.resourceChart,
+      'Resource Compliance',
+      currentRow
+    );
+
+    this.addChartImageToSheet(
+      workbook,
+      sheet,
+      this.actionStatusChart,
+      'Action Status Split',
+      currentRow
+    );
+  }
+
+  private addChartImageToSheet(
+    workbook: ExcelJS.Workbook,
+    sheet: ExcelJS.Worksheet,
+    chart: Chart | undefined,
+    title: string,
+    startRow: number
+  ): number {
+    if (!chart) {
+      sheet.getCell(`A${startRow}`).value = `${title} chart not available`;
+      return startRow + 3;
+    }
+
+    sheet.getCell(`A${startRow}`).value = title;
+    sheet.getCell(`A${startRow}`).font = {
+      bold: true,
+      size: 13,
+      color: { argb: 'FF0F172A' }
+    };
+
+    const base64Image = chart.toBase64Image('image/png', 1);
+
+    const imageId = workbook.addImage({
+      base64: base64Image,
+      extension: 'png'
+    });
+
+    sheet.addImage(imageId, {
+      tl: {
+        col: 0,
+        row: startRow
+      },
+      ext: {
+        width: 850,
+        height: 360
+      }
+    });
+
+    return startRow + 22;
+  }
+
+  private styleSheetHeader(sheet: ExcelJS.Worksheet): void {
+    const headerRow = sheet.getRow(1);
+
+    headerRow.eachCell(cell => {
+      cell.font = {
+        bold: true,
+        color: { argb: 'FFFFFFFF' }
+      };
+
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF0F172A' }
+      };
+
+      cell.alignment = {
+        vertical: 'middle',
+        horizontal: 'center'
+      };
+
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+      };
+    });
+
+    sheet.eachRow((row, rowNumber) => {
+      row.eachCell(cell => {
+        cell.alignment = {
+          vertical: 'top',
+          wrapText: true
+        };
+
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+        };
+      });
+
+      if (rowNumber > 1 && rowNumber % 2 === 0) {
+        row.eachCell(cell => {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFF8FAFC' }
+          };
+        });
+      }
+    });
+
+    sheet.views = [
+      {
+        state: 'frozen',
+        ySplit: 1
+      }
+    ];
   }
 
   private renderChartsWhenReady(): void {
@@ -297,6 +636,7 @@ export class ReliabilityKpiDashboardComponent
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: false,
         interaction: {
           mode: 'index',
           intersect: false
@@ -359,6 +699,7 @@ export class ReliabilityKpiDashboardComponent
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: false,
         plugins: {
           legend: {
             display: false
@@ -378,7 +719,7 @@ export class ReliabilityKpiDashboardComponent
     );
   }
 
- private renderBacklogChart(): void {
+  private renderBacklogChart(): void {
     if (!this.backlogChartRef || this.kpiTrend.length === 0) {
       return;
     }
@@ -424,6 +765,7 @@ export class ReliabilityKpiDashboardComponent
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: false,
         plugins: {
           legend: {
             position: 'bottom'
@@ -484,6 +826,7 @@ export class ReliabilityKpiDashboardComponent
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: false,
         plugins: {
           legend: {
             position: 'bottom'
@@ -542,6 +885,7 @@ export class ReliabilityKpiDashboardComponent
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: false,
         cutout: '62%',
         plugins: {
           legend: {
@@ -593,5 +937,11 @@ export class ReliabilityKpiDashboardComponent
     this.backlogChart?.destroy();
     this.resourceChart?.destroy();
     this.actionStatusChart?.destroy();
+
+    this.kpiTrendChart = undefined;
+    this.kpiStatusChart = undefined;
+    this.backlogChart = undefined;
+    this.resourceChart = undefined;
+    this.actionStatusChart = undefined;
   }
 }

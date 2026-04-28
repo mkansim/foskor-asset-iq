@@ -35,6 +35,70 @@
         </option>
       </select>
     </div>
+
+    <div class="export-section">
+      <button
+        type="button"
+        class="export-icon-button"
+        title="Export Excel Report"
+        aria-label="Export Excel Report"
+        [disabled]="loading || kpiTrend.length === 0"
+        (click)="exportDashboardToExcel()"
+      >
+        <span class="download-icon">⬇</span>
+        <span class="export-icon-text">Excel</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="dashboard-section-nav">
+    <button
+      type="button"
+      [class.active]="activeSection === 'performance'"
+      (click)="scrollToSection('performance')"
+    >
+      Performance Dashboard
+    </button>
+
+    <button
+      type="button"
+      [class.active]="activeSection === 'trend'"
+      (click)="scrollToSection('trend')"
+    >
+      KPI Weekly Trend
+    </button>
+
+    <button
+      type="button"
+      [class.active]="activeSection === 'latest'"
+      (click)="scrollToSection('latest')"
+    >
+      Latest KPI + Backlog
+    </button>
+
+    <button
+      type="button"
+      [class.active]="activeSection === 'resources'"
+      (click)="scrollToSection('resources')"
+    >
+      Resources + Actions
+    </button>
+
+    <button
+      type="button"
+      [class.active]="activeSection === 'records'"
+      (click)="scrollToSection('records')"
+    >
+      KPI Records
+    </button>
+
+    <button
+      type="button"
+      [class.active]="activeSection === 'tracker'"
+      (click)="scrollToSection('tracker')"
+    >
+      Action Tracker
+    </button>
   </section>
 
   <div *ngIf="loading" class="loading-message">
@@ -45,242 +109,349 @@
     {{ errorMessage }}
   </div>
 
-  <section class="metric-grid">
-    <article class="metric-card">
-      <p>Total Actions</p>
-      <h3>{{ totalActions }}</h3>
-      <span>Reliability tracker records</span>
-    </article>
-
-    <article class="metric-card success">
-      <p>Completed</p>
-      <h3>{{ completedActions }}</h3>
-      <span>Closed reliability actions</span>
-    </article>
-
-    <article class="metric-card warning">
-      <p>Open Actions</p>
-      <h3>{{ openActions }}</h3>
-      <span>In progress / not started</span>
-    </article>
-
-    <article class="metric-card danger">
-      <p>Overdue</p>
-      <h3>{{ overdueActions }}</h3>
-      <span>Requires attention</span>
-    </article>
-  </section>
-
-  <section *ngIf="summary" class="summary-panel">
-    <div class="summary-heading">
+  <section
+    id="performance"
+    class="dashboard-section-block"
+    [class.section-active]="activeSection === 'performance'"
+  >
+    <div class="section-banner">
       <div>
-        <p class="eyebrow">Latest Week</p>
-        <h3>{{ summary.department }}</h3>
-        <p class="summary-copy">
-          Current KPI status for week {{ summary.latestWeek }}.
+        <p class="eyebrow">Performance Dashboard</p>
+        <h3>KPI {{ selectedDepartment }} Performance Dashboard</h3>
+        <p>
+          High-level reliability performance view for {{ selectedDepartment }}.
         </p>
       </div>
+    </div>
 
-      <div class="score-card">
-        <span class="score-label">KPI Health Score</span>
-        <strong>{{ latestKpiScore }}%</strong>
-        <span>Week {{ summary.latestWeek }}</span>
+    <section class="metric-grid">
+      <article class="metric-card">
+        <p>Total Actions</p>
+        <h3>{{ totalActions }}</h3>
+        <span>Reliability tracker records</span>
+      </article>
+
+      <article class="metric-card success">
+        <p>Completed</p>
+        <h3>{{ completedActions }}</h3>
+        <span>Closed reliability actions</span>
+      </article>
+
+      <article class="metric-card warning">
+        <p>Open Actions</p>
+        <h3>{{ openActions }}</h3>
+        <span>In progress / not started</span>
+      </article>
+
+      <article class="metric-card danger">
+        <p>Overdue</p>
+        <h3>{{ overdueActions }}</h3>
+        <span>Requires attention</span>
+      </article>
+    </section>
+
+    <section *ngIf="summary" class="summary-panel">
+      <div class="summary-heading">
+        <div>
+          <p class="eyebrow">Latest Week</p>
+          <h3>{{ summary.department }}</h3>
+          <p class="summary-copy">
+            Current KPI status for week {{ summary.latestWeek }}.
+          </p>
+        </div>
+
+        <div class="score-card">
+          <span class="score-label">KPI Health Score</span>
+          <strong>{{ latestKpiScore }}%</strong>
+          <span>Week {{ summary.latestWeek }}</span>
+        </div>
+      </div>
+
+      <div class="kpi-card-grid">
+        <article
+          *ngFor="let kpi of summary.kpis"
+          [class]="getKpiCardClass(kpi.color)"
+        >
+          <p>{{ kpi.name }}</p>
+
+          <h3>
+            {{ kpi.value | number:'1.2-2' }}
+            <span>{{ kpi.unit }}</span>
+          </h3>
+
+          <small>
+            Target:
+            <ng-container *ngIf="kpi.name === 'Backlog Weeks'; else percentageTarget">
+              2 - 4 weeks
+            </ng-container>
+
+            <ng-template #percentageTarget>
+              {{ kpi.target }}%
+            </ng-template>
+          </small>
+
+          <div class="kpi-card-footer">
+            {{ kpi.status }}
+          </div>
+        </article>
+      </div>
+    </section>
+  </section>
+
+  <section
+    id="trend"
+    class="dashboard-section-block"
+    [class.section-active]="activeSection === 'trend'"
+  >
+    <div class="section-banner">
+      <div>
+        <p class="eyebrow">Trend Analysis</p>
+        <h3>KPI Weekly Trend</h3>
+        <p>
+          Shows how labour utilization, schedule compliance, legal compliance,
+          and resource compliance move week by week.
+        </p>
       </div>
     </div>
 
-    <div class="kpi-card-grid">
-      <article
-        *ngFor="let kpi of summary.kpis"
-        [class]="getKpiCardClass(kpi.color)"
-      >
-        <p>{{ kpi.name }}</p>
+    <section class="charts-grid single-chart-grid">
+      <article class="chart-card chart-card-wide">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Trend</p>
+            <h3>KPI Weekly Trend</h3>
+          </div>
+        </div>
 
-        <h3>
-          {{ kpi.value | number:'1.2-2' }}
-          <span>{{ kpi.unit }}</span>
-        </h3>
-
-        <small>
-          Target:
-          <ng-container *ngIf="kpi.name === 'Backlog Weeks'; else percentageTarget">
-            2 - 4 weeks
-          </ng-container>
-
-          <ng-template #percentageTarget>
-            {{ kpi.target }}%
-          </ng-template>
-        </small>
-
-        <div class="kpi-card-footer">
-          {{ kpi.status }}
+        <div class="chart-container large">
+          <canvas #kpiTrendChart></canvas>
         </div>
       </article>
+    </section>
+  </section>
+
+  <section
+    id="latest"
+    class="dashboard-section-block"
+    [class.section-active]="activeSection === 'latest'"
+  >
+    <div class="section-banner">
+      <div>
+        <p class="eyebrow">Latest KPI Status</p>
+        <h3>Latest KPI Status + Backlog Weeks vs Target</h3>
+        <p>
+          Compares the latest KPI values against their targets and checks whether
+          backlog is within the healthy 2 to 4 week range.
+        </p>
+      </div>
     </div>
+
+    <section class="charts-grid two-chart-grid">
+      <article class="chart-card">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Latest</p>
+            <h3>Latest KPI Status</h3>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <canvas #kpiStatusChart></canvas>
+        </div>
+      </article>
+
+      <article class="chart-card">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Backlog</p>
+            <h3>Backlog Weeks vs Target</h3>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <canvas #backlogChart></canvas>
+        </div>
+      </article>
+    </section>
   </section>
 
-  <section class="charts-grid">
-    <article class="chart-card chart-card-wide">
-      <div class="card-header">
-        <div>
-          <p class="eyebrow">Trend</p>
-          <h3>KPI Weekly Trend</h3>
+  <section
+    id="resources"
+    class="dashboard-section-block"
+    [class.section-active]="activeSection === 'resources'"
+  >
+    <div class="section-banner">
+      <div>
+        <p class="eyebrow">Resources and Actions</p>
+        <h3>Resource Compliance + Action Status Split</h3>
+        <p>
+          Shows whether the team has enough resources and how action tracker
+          items are distributed by status.
+        </p>
+      </div>
+    </div>
+
+    <section class="charts-grid two-chart-grid">
+      <article class="chart-card">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Resource</p>
+            <h3>Resource Compliance</h3>
+          </div>
         </div>
-      </div>
 
-      <div class="chart-container large">
-        <canvas #kpiTrendChart></canvas>
-      </div>
-    </article>
-
-    <article class="chart-card">
-      <div class="card-header">
-        <div>
-          <p class="eyebrow">Latest</p>
-          <h3>Latest KPI Status</h3>
+        <div class="chart-container">
+          <canvas #resourceChart></canvas>
         </div>
-      </div>
+      </article>
 
-      <div class="chart-container">
-        <canvas #kpiStatusChart></canvas>
-      </div>
-    </article>
-
-    <article class="chart-card">
-      <div class="card-header">
-        <div>
-          <p class="eyebrow">Backlog</p>
-          <h3>Backlog Weeks vs Target</h3>
+      <article class="chart-card">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Actions</p>
+            <h3>Action Status Split</h3>
+          </div>
         </div>
-      </div>
 
-      <div class="chart-container">
-        <canvas #backlogChart></canvas>
-      </div>
-    </article>
-
-    <article class="chart-card">
-      <div class="card-header">
-        <div>
-          <p class="eyebrow">Resource</p>
-          <h3>Resource Compliance</h3>
+        <div class="chart-container">
+          <canvas #actionStatusChart></canvas>
         </div>
-      </div>
-
-      <div class="chart-container">
-        <canvas #resourceChart></canvas>
-      </div>
-    </article>
-
-    <article class="chart-card">
-      <div class="card-header">
-        <div>
-          <p class="eyebrow">Actions</p>
-          <h3>Action Status Split</h3>
-        </div>
-      </div>
-
-      <div class="chart-container">
-        <canvas #actionStatusChart></canvas>
-      </div>
-    </article>
+      </article>
+    </section>
   </section>
 
-  <section class="table-section">
-    <div class="section-title">
+  <section
+    id="records"
+    class="dashboard-section-block"
+    [class.section-active]="activeSection === 'records'"
+  >
+    <div class="section-banner">
       <div>
         <p class="eyebrow">Weekly Data</p>
-        <h3>KPI Records</h3>
+        <h3>Weekly Data KPI Records</h3>
+        <p>
+          Detailed weekly KPI data loaded from SQL Server for {{ selectedDepartment }}.
+        </p>
       </div>
     </div>
 
-    <div class="table-wrapper">
-      <table class="issues-table">
-        <thead>
-          <tr>
-            <th>Week</th>
-            <th>Department</th>
-            <th>Labour Utilization</th>
-            <th>Schedule Compliance</th>
-            <th>Legal Compliance</th>
-            <th>Backlog Weeks</th>
-            <th>Resource Compliance</th>
-          </tr>
-        </thead>
+    <section class="table-section">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">Weekly Data</p>
+          <h3>KPI Records</h3>
+        </div>
 
-        <tbody>
-          <tr *ngFor="let row of kpiTrend">
-            <td>{{ row.week }}</td>
-            <td>{{ row.department }}</td>
-            <td>{{ row.labourUtilization | number:'1.2-2' }}%</td>
-            <td>{{ row.scheduleCompliance | number:'1.2-2' }}%</td>
-            <td>{{ row.legalCompliance | number:'1.2-2' }}%</td>
-            <td>{{ row.backlogWeeks | number:'1.2-2' }}</td>
-            <td>{{ row.resourceCompliance | number:'1.2-2' }}%</td>
-          </tr>
+        <span class="record-count">
+          {{ kpiTrend.length }} records
+        </span>
+      </div>
 
-          <tr *ngIf="!loading && kpiTrend.length === 0">
-            <td colspan="7" class="empty-cell">
-              No KPI records found for {{ selectedDepartment }}.
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <div class="table-wrapper">
+        <table class="issues-table">
+          <thead>
+            <tr>
+              <th>Week</th>
+              <th>Department</th>
+              <th>Labour Utilization</th>
+              <th>Schedule Compliance</th>
+              <th>Legal Compliance</th>
+              <th>Backlog Weeks</th>
+              <th>Resource Compliance</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let row of kpiTrend; trackBy: trackByKpiId">
+              <td>{{ row.week }}</td>
+              <td>{{ row.department }}</td>
+              <td>{{ row.labourUtilization | number:'1.2-2' }}%</td>
+              <td>{{ row.scheduleCompliance | number:'1.2-2' }}%</td>
+              <td>{{ row.legalCompliance | number:'1.2-2' }}%</td>
+              <td>{{ row.backlogWeeks | number:'1.2-2' }}</td>
+              <td>{{ row.resourceCompliance | number:'1.2-2' }}%</td>
+            </tr>
+
+            <tr *ngIf="!loading && kpiTrend.length === 0">
+              <td colspan="7" class="empty-cell">
+                No KPI records found for {{ selectedDepartment }}.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </section>
 
-  <section class="table-section">
-    <div class="section-title">
+  <section
+    id="tracker"
+    class="dashboard-section-block"
+    [class.section-active]="activeSection === 'tracker'"
+  >
+    <div class="section-banner">
       <div>
         <p class="eyebrow">Reliability Actions</p>
         <h3>Action Tracker</h3>
+        <p>
+          Tracks reliability actions, owners, due dates, and completion status.
+        </p>
+      </div>
+    </div>
+
+    <section class="table-section">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">Reliability Actions</p>
+          <h3>Action Tracker</h3>
+        </div>
+
+        <span class="record-count">
+          {{ filteredActions.length }} records
+        </span>
       </div>
 
-      <span class="record-count">
-        {{ filteredActions.length }} records
-      </span>
-    </div>
+      <div class="table-wrapper">
+        <table class="issues-table">
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Department</th>
+              <th>Notes</th>
+              <th>Category</th>
+              <th>Owner</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th>Comments</th>
+            </tr>
+          </thead>
 
-    <div class="table-wrapper">
-      <table class="issues-table">
-        <thead>
-          <tr>
-            <th>Task</th>
-            <th>Department</th>
-            <th>Notes</th>
-            <th>Category</th>
-            <th>Owner</th>
-            <th>Due Date</th>
-            <th>Status</th>
-            <th>Comments</th>
-          </tr>
-        </thead>
+          <tbody>
+            <tr *ngFor="let action of filteredActions; trackBy: trackByActionId">
+              <td>{{ action.task || '-' }}</td>
+              <td>{{ action.department || '-' }}</td>
+              <td class="notes-cell">{{ action.notes }}</td>
+              <td>{{ action.category || '-' }}</td>
+              <td>{{ action.owner || '-' }}</td>
+              <td>
+                {{ action.dueDate ? (action.dueDate | date:'yyyy-MM-dd') : '-' }}
+              </td>
+              <td>
+                <span [class]="getStatusClass(action.status)">
+                  {{ action.status || 'Unknown' }}
+                </span>
+              </td>
+              <td class="notes-cell">{{ action.comments || '-' }}</td>
+            </tr>
 
-        <tbody>
-          <tr *ngFor="let action of filteredActions">
-            <td>{{ action.task || '-' }}</td>
-            <td>{{ action.department || '-' }}</td>
-            <td class="notes-cell">{{ action.notes }}</td>
-            <td>{{ action.category || '-' }}</td>
-            <td>{{ action.owner || '-' }}</td>
-            <td>
-              {{ action.dueDate ? (action.dueDate | date:'yyyy-MM-dd') : '-' }}
-            </td>
-            <td>
-              <span [class]="getStatusClass(action.status)">
-                {{ action.status || 'Unknown' }}
-              </span>
-            </td>
-            <td class="notes-cell">{{ action.comments || '-' }}</td>
-          </tr>
-
-          <tr *ngIf="!loading && filteredActions.length === 0">
-            <td colspan="8" class="empty-cell">
-              No action tracker records found.
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+            <tr *ngIf="!loading && filteredActions.length === 0">
+              <td colspan="8" class="empty-cell">
+                No action tracker records found.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </section>
 
 </div>
