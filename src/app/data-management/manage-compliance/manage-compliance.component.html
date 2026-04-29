@@ -1,0 +1,206 @@
+<section class="manage-compliance-page">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">
+        {{ isEditMode ? 'Edit reliability compliance KPI' : 'New reliability compliance KPI' }}
+      </p>
+
+      <h2>
+        {{ isEditMode ? 'Edit Compliance KPI' : 'Manage Compliance KPI' }}
+      </h2>
+    </div>
+
+    <p class="page-copy">
+      {{ isEditMode
+        ? 'Update the reliability KPI details below.'
+        : 'Use the form below to capture weekly reliability compliance KPI values.' }}
+    </p>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="successMessage" class="success-message">
+    {{ successMessage }}
+  </div>
+
+  <form class="form-grid" (ngSubmit)="onSubmit()">
+    <div class="form-card">
+      <label for="department">Department</label>
+      <select
+        id="department"
+        name="department"
+        [(ngModel)]="kpi.department"
+      >
+        <option *ngFor="let department of departments" [value]="department">
+          {{ department }}
+        </option>
+      </select>
+
+      <label for="week">Week</label>
+      <input
+        id="week"
+        name="week"
+        type="text"
+        placeholder="Example: 202601"
+        [(ngModel)]="kpi.week"
+      />
+
+      <label for="labourUtilization">Labour Utilization (%)</label>
+      <input
+        id="labourUtilization"
+        name="labourUtilization"
+        type="number"
+        step="0.01"
+        min="0"
+        [(ngModel)]="kpi.labourUtilization"
+      />
+
+      <label for="scheduleCompliance">Schedule Compliance (%)</label>
+      <input
+        id="scheduleCompliance"
+        name="scheduleCompliance"
+        type="number"
+        step="0.01"
+        min="0"
+        [(ngModel)]="kpi.scheduleCompliance"
+      />
+    </div>
+
+    <div class="form-card">
+      <label for="legalCompliance">Legal Compliance (%)</label>
+      <input
+        id="legalCompliance"
+        name="legalCompliance"
+        type="number"
+        step="0.01"
+        min="0"
+        [(ngModel)]="kpi.legalCompliance"
+      />
+
+      <label for="backlogWeeks">Backlog Weeks</label>
+      <input
+        id="backlogWeeks"
+        name="backlogWeeks"
+        type="number"
+        step="0.01"
+        min="0"
+        [(ngModel)]="kpi.backlogWeeks"
+      />
+
+      <label for="resourceCompliance">Resource Compliance (%)</label>
+      <input
+        id="resourceCompliance"
+        name="resourceCompliance"
+        type="number"
+        step="0.01"
+        min="0"
+        [(ngModel)]="kpi.resourceCompliance"
+      />
+
+      <div class="form-note">
+        <p>
+          Targets: Labour Utilization ≥ 65%, Schedule Compliance ≥ 90%,
+          Legal Compliance = 100%, Backlog Weeks between 2 and 4,
+          Resource Compliance = 100%.
+        </p>
+      </div>
+    </div>
+  </form>
+
+  <div class="form-actions">
+    <button
+      class="secondary-button"
+      type="button"
+      *ngIf="isEditMode"
+      (click)="cancelEdit()"
+    >
+      Cancel
+    </button>
+
+    <button
+      class="primary-button"
+      type="button"
+      [disabled]="saving"
+      (click)="onSubmit()"
+    >
+      {{ saving
+        ? 'Saving...'
+        : isEditMode
+          ? 'Update KPI'
+          : 'Submit KPI' }}
+    </button>
+  </div>
+
+  <section class="records-section">
+    <div class="section-title">
+      <div>
+        <p class="eyebrow">Data Management</p>
+        <h3>Compliance KPI Records</h3>
+      </div>
+
+      <span class="record-count">
+        {{ kpis.length }} records
+      </span>
+    </div>
+
+    <div *ngIf="loading" class="loading-message">
+      Loading KPI records...
+    </div>
+
+    <div class="table-wrapper" *ngIf="!loading">
+      <table class="records-table">
+        <thead>
+          <tr>
+            <th>Week</th>
+            <th>Department</th>
+            <th>Labour Utilization</th>
+            <th>Schedule Compliance</th>
+            <th>Legal Compliance</th>
+            <th>Backlog Weeks</th>
+            <th>Resource Compliance</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let row of kpis">
+            <td>{{ row.week }}</td>
+            <td>{{ row.department }}</td>
+            <td>{{ row.labourUtilization | number:'1.2-2' }}%</td>
+            <td>{{ row.scheduleCompliance | number:'1.2-2' }}%</td>
+            <td>{{ row.legalCompliance | number:'1.2-2' }}%</td>
+            <td>{{ row.backlogWeeks | number:'1.2-2' }}</td>
+            <td>{{ row.resourceCompliance | number:'1.2-2' }}%</td>
+            <td>
+              <div class="row-actions">
+                <button
+                  type="button"
+                  class="edit-button"
+                  (click)="editKpi(row)"
+                >
+                  Edit
+                </button>
+
+                <button
+                  type="button"
+                  class="delete-button"
+                  (click)="deleteKpi(row)"
+                >
+                  Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+
+          <tr *ngIf="kpis.length === 0">
+            <td colspan="8" class="empty-cell">
+              No compliance KPI records found.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>

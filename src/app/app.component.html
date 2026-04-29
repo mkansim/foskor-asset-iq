@@ -14,31 +14,66 @@
     </div>
 
     <nav class="nav-links" aria-label="Primary navigation">
-      <a routerLink="/reports" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-        <span class="nav-icon">📋</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Maintenance report</span>
-      </a>
+    <a routerLink="/reports" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label" *ngIf="!sidebarCollapsed">Power BI Live</span>
+    </a>
 
-      <a routerLink="/reports/reliability-kpis" routerLinkActive="active">
-        <span class="nav-icon">📊</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Reliability KPI Dashboard</span>
-      </a>
+    <a routerLink="/reports/reliability-kpis" routerLinkActive="active">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label" *ngIf="!sidebarCollapsed">KPI Dashboard</span>
+    </a>
 
-      <a routerLink="/issues" routerLinkActive="active">
-        <span class="nav-icon">🛠️</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Issues</span>
-      </a>
+    <!-- DATA MANAGEMENT COLLAPSIBLE TAB -->
+    <div class="nav-group" [class.open]="dataManagementOpen">
+      <button
+        type="button"
+        class="nav-group-toggle"
+        [class.active]="dataManagementOpen"
+        (click)="toggleDataManagement()"
+        title="Data Management"
+        aria-label="Toggle Data Management menu"
+      >
+        <span class="nav-icon">🗂️</span>
 
-      <a routerLink="/overview" routerLinkActive="active">
-        <span class="nav-icon">🏭</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Overview</span>
-      </a>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">
+          Data Management
+        </span>
 
-      <a routerLink="/raise-issue" routerLinkActive="active">
-        <span class="nav-icon">➕</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Raise Issue</span>
-      </a>
-    </nav>
+        <span class="nav-chevron" *ngIf="!sidebarCollapsed">
+          {{ dataManagementOpen ? '▾' : '▸' }}
+        </span>
+      </button>
+
+      <div
+        class="nav-sub-links"
+        *ngIf="dataManagementOpen && !sidebarCollapsed"
+      >
+        <a
+          routerLink="/data-management/manage-compliance"
+          routerLinkActive="active"
+        >
+          <span class="sub-nav-dot"></span>
+          Manage Compliance
+        </a>
+      </div>
+    </div>
+
+    <a routerLink="/issues" routerLinkActive="active">
+      <span class="nav-icon">🛠️</span>
+      <span class="nav-label" *ngIf="!sidebarCollapsed">Issues</span>
+    </a>
+
+    <!-- <a routerLink="/overview" routerLinkActive="active">
+      <span class="nav-icon">🏭</span>
+      <span class="nav-label" *ngIf="!sidebarCollapsed">Overview</span>
+    </a> -->
+
+    <a routerLink="/raise-issue" routerLinkActive="active">
+      <span class="nav-icon">➕</span>
+      <span class="nav-label" *ngIf="!sidebarCollapsed">Raise Issue</span>
+    </a>
+  </nav>
 
     <div class="nav-footer" *ngIf="!sidebarCollapsed">
       <p>Rhixete Engineering Pty(Ltd)-2026</p>

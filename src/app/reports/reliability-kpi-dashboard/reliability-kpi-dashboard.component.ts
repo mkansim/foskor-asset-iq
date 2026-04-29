@@ -77,9 +77,17 @@ export class ReliabilityKpiDashboardComponent
   ];
 
   summary?: KpiSummary;
+
   kpiTrend: ReliabilityKpi[] = [];
+  filteredKpiTrend: ReliabilityKpi[] = [];
+
   actions: ActionTracker[] = [];
   filteredActions: ActionTracker[] = [];
+
+  availableWeeks: string[] = [];
+  fromWeek = '';
+  toWeek = '';
+  weekFilterError = '';
 
   loading = false;
   errorMessage = '';
@@ -114,6 +122,7 @@ export class ReliabilityKpiDashboardComponent
   loadDashboard(): void {
     this.loading = true;
     this.errorMessage = '';
+    this.weekFilterError = '';
 
     this.destroyCharts();
 
@@ -137,7 +146,20 @@ export class ReliabilityKpiDashboardComponent
       .getKpisByDepartment(this.selectedDepartment)
       .subscribe({
         next: result => {
-          this.kpiTrend = result;
+          this.kpiTrend = [...result].sort((a, b) =>
+            this.compareWeeks(a.week, b.week)
+          );
+
+          this.filteredKpiTrend = [...this.kpiTrend];
+
+          this.availableWeeks = Array.from(
+            new Set(this.kpiTrend.map(row => row.week))
+          ).sort((a, b) => this.compareWeeks(a, b));
+
+          this.fromWeek = '';
+          this.toWeek = '';
+          this.weekFilterError = '';
+
           this.loading = false;
           this.cdr.detectChanges();
           this.renderChartsWhenReady();
@@ -176,6 +198,48 @@ export class ReliabilityKpiDashboardComponent
     this.applyActionFilter();
     this.cdr.detectChanges();
     this.renderActionStatusChart();
+  }
+
+  applyWeekFilter(): void {
+    this.weekFilterError = '';
+
+    if (
+      this.fromWeek &&
+      this.toWeek &&
+      this.compareWeeks(this.fromWeek, this.toWeek) > 0
+    ) {
+      this.weekFilterError = 'From Week cannot be greater than To Week.';
+      return;
+    }
+
+    this.filteredKpiTrend = this.kpiTrend.filter(row => {
+      const isAfterFrom =
+        !this.fromWeek || this.compareWeeks(row.week, this.fromWeek) >= 0;
+
+      const isBeforeTo =
+        !this.toWeek || this.compareWeeks(row.week, this.toWeek) <= 0;
+
+      return isAfterFrom && isBeforeTo;
+    });
+
+    this.cdr.detectChanges();
+
+    this.renderKpiTrendChart();
+    this.renderBacklogChart();
+    this.renderResourceChart();
+  }
+
+  resetWeekFilter(): void {
+    this.fromWeek = '';
+    this.toWeek = '';
+    this.weekFilterError = '';
+    this.filteredKpiTrend = [...this.kpiTrend];
+
+    this.cdr.detectChanges();
+
+    this.renderKpiTrendChart();
+    this.renderBacklogChart();
+    this.renderResourceChart();
   }
 
   scrollToSection(section: DashboardSection): void {
@@ -315,6 +379,8 @@ export class ReliabilityKpiDashboardComponent
 
     sheet.addRow({ field: 'Department', value: this.selectedDepartment });
     sheet.addRow({ field: 'Latest Week', value: this.summary?.latestWeek || '-' });
+    sheet.addRow({ field: 'Week Filter From', value: this.fromWeek || 'All' });
+    sheet.addRow({ field: 'Week Filter To', value: this.toWeek || 'All' });
     sheet.addRow({ field: 'KPI Health Score', value: `${this.latestKpiScore}%` });
     sheet.addRow({ field: 'Total Actions', value: this.totalActions });
     sheet.addRow({ field: 'Completed Actions', value: this.completedActions });
@@ -360,7 +426,7 @@ export class ReliabilityKpiDashboardComponent
       { header: 'Resource Compliance %', key: 'resourceCompliance', width: 26 }
     ];
 
-    this.kpiTrend.forEach(row => {
+    this.filteredKpiTrend.forEach(row => {
       sheet.addRow({
         id: row.id,
         department: row.department,
@@ -584,20 +650,22 @@ export class ReliabilityKpiDashboardComponent
   }
 
   private renderKpiTrendChart(): void {
-    if (!this.kpiTrendChartRef || this.kpiTrend.length === 0) {
+    if (!this.kpiTrendChartRef || this.filteredKpiTrend.length === 0) {
+      this.kpiTrendChart?.destroy();
+      this.kpiTrendChart = undefined;
       return;
     }
 
     this.kpiTrendChart?.destroy();
 
-    const labels = this.kpiTrend.map(x => x.week);
+    const labels = this.filteredKpiTrend.map(x => x.week);
 
     const data: ChartData<'line'> = {
       labels,
       datasets: [
         {
           label: 'Labour Utilization %',
-          data: this.kpiTrend.map(x => x.labourUtilization),
+          data: this.filteredKpiTrend.map(x => x.labourUtilization),
           borderColor: '#2563eb',
           backgroundColor: 'rgba(37, 99, 235, 0.15)',
           tension: 0.35,
@@ -605,7 +673,7 @@ export class ReliabilityKpiDashboardComponent
         },
         {
           label: 'Schedule Compliance %',
-          data: this.kpiTrend.map(x => x.scheduleCompliance),
+          data: this.filteredKpiTrend.map(x => x.scheduleCompliance),
           borderColor: '#16a34a',
           backgroundColor: 'rgba(22, 163, 74, 0.15)',
           tension: 0.35,
@@ -613,7 +681,7 @@ export class ReliabilityKpiDashboardComponent
         },
         {
           label: 'Legal Compliance %',
-          data: this.kpiTrend.map(x => x.legalCompliance),
+          data: this.filteredKpiTrend.map(x => x.legalCompliance),
           borderColor: '#7c3aed',
           backgroundColor: 'rgba(124, 58, 237, 0.15)',
           tension: 0.35,
@@ -621,7 +689,7 @@ export class ReliabilityKpiDashboardComponent
         },
         {
           label: 'Resource Compliance %',
-          data: this.kpiTrend.map(x => x.resourceCompliance),
+          data: this.filteredKpiTrend.map(x => x.resourceCompliance),
           borderColor: '#ea580c',
           backgroundColor: 'rgba(234, 88, 12, 0.15)',
           tension: 0.35,
@@ -720,13 +788,15 @@ export class ReliabilityKpiDashboardComponent
   }
 
   private renderBacklogChart(): void {
-    if (!this.backlogChartRef || this.kpiTrend.length === 0) {
+    if (!this.backlogChartRef || this.filteredKpiTrend.length === 0) {
+      this.backlogChart?.destroy();
+      this.backlogChart = undefined;
       return;
     }
 
     this.backlogChart?.destroy();
 
-    const labels = this.kpiTrend.map(x => x.week);
+    const labels = this.filteredKpiTrend.map(x => x.week);
 
     const data: ChartData = {
       labels,
@@ -734,14 +804,14 @@ export class ReliabilityKpiDashboardComponent
         {
           type: 'bar',
           label: 'Backlog Weeks',
-          data: this.kpiTrend.map(x => x.backlogWeeks),
+          data: this.filteredKpiTrend.map(x => x.backlogWeeks),
           backgroundColor: '#f59e0b',
           borderRadius: 10
         },
         {
           type: 'line',
           label: 'Minimum Target',
-          data: this.kpiTrend.map(() => 2),
+          data: this.filteredKpiTrend.map(() => 2),
           borderColor: '#16a34a',
           backgroundColor: '#16a34a',
           pointRadius: 3,
@@ -750,7 +820,7 @@ export class ReliabilityKpiDashboardComponent
         {
           type: 'line',
           label: 'Maximum Target',
-          data: this.kpiTrend.map(() => 4),
+          data: this.filteredKpiTrend.map(() => 4),
           borderColor: '#dc2626',
           backgroundColor: '#dc2626',
           pointRadius: 3,
@@ -790,13 +860,15 @@ export class ReliabilityKpiDashboardComponent
   }
 
   private renderResourceChart(): void {
-    if (!this.resourceChartRef || this.kpiTrend.length === 0) {
+    if (!this.resourceChartRef || this.filteredKpiTrend.length === 0) {
+      this.resourceChart?.destroy();
+      this.resourceChart = undefined;
       return;
     }
 
     this.resourceChart?.destroy();
 
-    const labels = this.kpiTrend.map(x => x.week);
+    const labels = this.filteredKpiTrend.map(x => x.week);
 
     const data: ChartData = {
       labels,
@@ -804,14 +876,14 @@ export class ReliabilityKpiDashboardComponent
         {
           type: 'bar',
           label: 'Resource Compliance %',
-          data: this.kpiTrend.map(x => x.resourceCompliance),
+          data: this.filteredKpiTrend.map(x => x.resourceCompliance),
           backgroundColor: '#2563eb',
           borderRadius: 10
         },
         {
           type: 'line',
           label: 'Target 100%',
-          data: this.kpiTrend.map(() => 100),
+          data: this.filteredKpiTrend.map(() => 100),
           borderColor: '#dc2626',
           backgroundColor: '#dc2626',
           pointRadius: 3,
@@ -899,6 +971,17 @@ export class ReliabilityKpiDashboardComponent
       this.actionStatusChartRef.nativeElement,
       config
     );
+  }
+
+  private compareWeeks(a: string, b: string): number {
+    const weekA = Number(a);
+    const weekB = Number(b);
+
+    if (!Number.isNaN(weekA) && !Number.isNaN(weekB)) {
+      return weekA - weekB;
+    }
+
+    return a.localeCompare(b);
   }
 
   private getChartColor(color: string): string {

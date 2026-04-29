@@ -42,7 +42,7 @@
         class="export-icon-button"
         title="Export Excel Report"
         aria-label="Export Excel Report"
-        [disabled]="loading || kpiTrend.length === 0"
+        [disabled]="loading || filteredKpiTrend.length === 0"
         (click)="exportDashboardToExcel()"
       >
         <span class="download-icon">⬇</span>
@@ -109,6 +109,7 @@
     {{ errorMessage }}
   </div>
 
+  <!-- SECTION 1: PERFORMANCE DASHBOARD -->
   <section
     id="performance"
     class="dashboard-section-block"
@@ -198,6 +199,7 @@
     </section>
   </section>
 
+  <!-- SECTION 2: KPI WEEKLY TREND -->
   <section
     id="trend"
     class="dashboard-section-block"
@@ -213,6 +215,65 @@
         </p>
       </div>
     </div>
+
+    <section class="week-filter-panel">
+      <div class="week-filter-header">
+        <div>
+          <p class="eyebrow">Week Range Filter</p>
+          <h3>Filter KPI Weekly Trend</h3>
+        </div>
+
+        <span class="record-count">
+          {{ filteredKpiTrend.length }} of {{ kpiTrend.length }} records
+        </span>
+      </div>
+
+      <div class="week-filter-controls">
+        <div class="filter-section week-filter-field">
+          <label for="fromWeek">From Week</label>
+          <select id="fromWeek" [(ngModel)]="fromWeek">
+            <option value="">All</option>
+            <option *ngFor="let week of availableWeeks" [value]="week">
+              {{ week }}
+            </option>
+          </select>
+        </div>
+
+        <div class="filter-section week-filter-field">
+          <label for="toWeek">To Week</label>
+          <select id="toWeek" [(ngModel)]="toWeek">
+            <option value="">All</option>
+            <option *ngFor="let week of availableWeeks" [value]="week">
+              {{ week }}
+            </option>
+          </select>
+        </div>
+
+        <div class="week-filter-actions">
+          <button
+            type="button"
+            class="apply-filter-button"
+            [disabled]="loading || kpiTrend.length === 0"
+            (click)="applyWeekFilter()"
+          >
+            Apply Filter
+          </button>
+
+          <button
+            type="button"
+            class="reset-filter-button"
+            [disabled]="loading || kpiTrend.length === 0"
+            (click)="resetWeekFilter()"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="weekFilterError" class="filter-warning">
+        {{ weekFilterError }}
+      </div>
+    </section>
 
     <section class="charts-grid single-chart-grid">
       <article class="chart-card chart-card-wide">
@@ -230,6 +291,7 @@
     </section>
   </section>
 
+  <!-- SECTION 3: LATEST KPI STATUS + BACKLOG -->
   <section
     id="latest"
     class="dashboard-section-block"
@@ -275,6 +337,7 @@
     </section>
   </section>
 
+  <!-- SECTION 4: RESOURCE COMPLIANCE + ACTION STATUS -->
   <section
     id="resources"
     class="dashboard-section-block"
@@ -320,6 +383,7 @@
     </section>
   </section>
 
+  <!-- SECTION 5: KPI RECORDS -->
   <section
     id="records"
     class="dashboard-section-block"
@@ -343,7 +407,7 @@
         </div>
 
         <span class="record-count">
-          {{ kpiTrend.length }} records
+          {{ filteredKpiTrend.length }} records
         </span>
       </div>
 
@@ -362,7 +426,7 @@
           </thead>
 
           <tbody>
-            <tr *ngFor="let row of kpiTrend; trackBy: trackByKpiId">
+            <tr *ngFor="let row of filteredKpiTrend; trackBy: trackByKpiId">
               <td>{{ row.week }}</td>
               <td>{{ row.department }}</td>
               <td>{{ row.labourUtilization | number:'1.2-2' }}%</td>
@@ -372,9 +436,9 @@
               <td>{{ row.resourceCompliance | number:'1.2-2' }}%</td>
             </tr>
 
-            <tr *ngIf="!loading && kpiTrend.length === 0">
+            <tr *ngIf="!loading && filteredKpiTrend.length === 0">
               <td colspan="7" class="empty-cell">
-                No KPI records found for {{ selectedDepartment }}.
+                No KPI records found for the selected week range.
               </td>
             </tr>
           </tbody>
@@ -383,6 +447,7 @@
     </section>
   </section>
 
+  <!-- SECTION 6: ACTION TRACKER -->
   <section
     id="tracker"
     class="dashboard-section-block"

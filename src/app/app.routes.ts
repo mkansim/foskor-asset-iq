@@ -6,9 +6,10 @@ import { ViewIssueComponent } from './reports/view-issue/view-issue.component';
 import { LoginComponent } from './auth/login.component';
 import { AuthGuard } from './auth/auth.guard';
 import { ReliabilityKpiDashboardComponent } from './reports/reliability-kpi-dashboard/reliability-kpi-dashboard.component';
+import { ManageComplianceComponent } from './data-management/manage-compliance/manage-compliance.component';
 
 export const routes: Routes = [
-  { path: '', redirectTo: '/reports', pathMatch: 'full' },
+  { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: 'login', component: LoginComponent },
   { path: 'reports', component: IssuesComponent, canActivate: [AuthGuard] },
   { path: 'issues', component: IssueListComponent, canActivate: [AuthGuard] },
@@ -16,5 +17,6 @@ export const routes: Routes = [
   { path: 'raise-issue', component: RaiseIssueComponent, canActivate: [AuthGuard] },
   { path: 'view-issue', component: ViewIssueComponent, canActivate: [AuthGuard] },
   { path: 'reports/reliability-kpis', component: ReliabilityKpiDashboardComponent, canActivate: [AuthGuard] },
-  { path: '**', redirectTo: '/reports' }
-];
+  { path: 'data-management/manage-compliance', component: ManageComplianceComponent, canActivate: [AuthGuard] },
+  { path: '**', redirectTo: '/login' }
+]; 

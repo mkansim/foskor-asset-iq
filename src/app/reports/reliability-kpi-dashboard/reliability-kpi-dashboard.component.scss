@@ -123,6 +123,97 @@ h3 {
 }
 
 /* =========================
+   WEEK RANGE FILTER
+========================= */
+
+.week-filter-panel {
+  background: #ffffff;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+  border-left: 6px solid #2563eb;
+}
+
+.week-filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.week-filter-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.week-filter-field {
+  min-width: 220px;
+}
+
+.week-filter-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.apply-filter-button,
+.reset-filter-button {
+  height: 3.2rem;
+  padding: 0 1.25rem;
+  border: none;
+  border-radius: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.apply-filter-button {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.2);
+}
+
+.apply-filter-button:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.28);
+}
+
+.reset-filter-button {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.reset-filter-button:hover:not(:disabled) {
+  background: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.apply-filter-button:disabled,
+.reset-filter-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.filter-warning {
+  margin-top: 1rem;
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  padding: 0.85rem 1rem;
+  border-radius: 0.85rem;
+  font-weight: 700;
+}
+
+/* =========================
    INTERNAL SECTION NAVIGATION
 ========================= */
 
@@ -617,6 +708,30 @@ h3 {
     height: 3.2rem;
     flex-direction: row;
     gap: 0.4rem;
+  }
+
+  .week-filter-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .week-filter-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .week-filter-field {
+    min-width: 100%;
+  }
+
+  .week-filter-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .apply-filter-button,
+  .reset-filter-button {
+    width: 100%;
   }
 
   .metric-grid,

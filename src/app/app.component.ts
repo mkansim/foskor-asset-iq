@@ -14,15 +14,21 @@ import { filter } from 'rxjs/operators';
 })
 export class AppComponent implements OnInit, OnDestroy {
   title = 'foskor asset intelligence';
+
   menuOpen = false;
+  sidebarCollapsed = false;
+  dataManagementOpen = false;
+
   isAuthenticated = false;
   loggedInEmail: string | null = null;
   hideNavigation = false;
-  sidebarCollapsed = false;
 
   private subscription = new Subscription();
 
-  constructor(private auth: FirebaseAuthService, private router: Router) {}
+  constructor(
+    private auth: FirebaseAuthService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.subscription.add(
@@ -34,10 +40,19 @@ export class AppComponent implements OnInit, OnDestroy {
 
     this.hideNavigation = this.router.url === '/login';
 
+    this.setOpenMenusFromRoute(this.router.url);
+
     this.subscription.add(
-      this.router.events.pipe(filter(event => event instanceof NavigationEnd)).subscribe(() => {
-        this.hideNavigation = this.router.url === '/login';
-      })
+      this.router.events
+        .pipe(filter(event => event instanceof NavigationEnd))
+        .subscribe(event => {
+          const navigationEnd = event as NavigationEnd;
+
+          this.hideNavigation = navigationEnd.urlAfterRedirects === '/login';
+          this.menuOpen = false;
+
+          this.setOpenMenusFromRoute(navigationEnd.urlAfterRedirects);
+        })
     );
   }
 
@@ -53,11 +68,31 @@ export class AppComponent implements OnInit, OnDestroy {
     this.auth.signOut();
   }
 
-  toggleMenu() {
+  toggleMenu(): void {
     this.menuOpen = !this.menuOpen;
   }
 
   toggleSidebar(): void {
     this.sidebarCollapsed = !this.sidebarCollapsed;
-}
+
+    if (this.sidebarCollapsed) {
+      this.dataManagementOpen = false;
+    }
+  }
+
+  toggleDataManagement(): void {
+    if (this.sidebarCollapsed) {
+      this.sidebarCollapsed = false;
+      this.dataManagementOpen = true;
+      return;
+    }
+
+    this.dataManagementOpen = !this.dataManagementOpen;
+  }
+
+  private setOpenMenusFromRoute(url: string): void {
+    if (url.startsWith('/data-management')) {
+      this.dataManagementOpen = true;
+    }
+  }
 }
