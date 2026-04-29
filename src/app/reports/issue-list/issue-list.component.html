@@ -2,103 +2,252 @@
   <div class="page-header">
     <div>
       <p class="eyebrow">All maintenance issues</p>
-      <h2>Issue List</h2>
+      <h2>Action Tracker</h2>
     </div>
-    <p class="page-copy">View, search, and manage all maintenance issues.</p>
+
+    <p class="page-copy">
+      View, search, import, export, and manage all maintenance issues.
+    </p>
   </div>
 
+  <!-- DATA SOURCE CONTROLS -->
+  <div class="data-source-card">
+    <div>
+      <h3>Data Source</h3>
+
+      <p>
+        Current source:
+        <strong>{{ dataSource === 'excel' ? 'Imported Excel Sheet' : 'Database' }}</strong>
+        <span *ngIf="importedFileName"> — {{ importedFileName }}</span>
+      </p>
+    </div>
+
+    <div class="data-source-actions">
+      <button
+        type="button"
+        class="secondary-button"
+        (click)="loadIssuesFromDatabase()"
+      >
+        Load From Database
+      </button>
+
+      <label class="import-button">
+        Import Excel Sheet
+        <input
+          type="file"
+          accept=".xlsx,.xls"
+          hidden
+          (change)="onExcelFileSelected($event)"
+        />
+      </label>
+
+      <button
+        type="button"
+        class="export-button"
+        (click)="exportToExcel()"
+      >
+        Export To Excel
+      </button>
+    </div>
+  </div>
+
+  <!-- FILTERS -->
   <div class="list-controls">
     <div class="search-box">
       <input
         type="text"
-        placeholder="Search by section, equipment, issue, or person..."
+        placeholder="Search by responsible person, section, equipment, issue, or comments..."
         [(ngModel)]="searchText"
         (keyup.enter)="onSearch()"
       />
-      <button class="search-button" (click)="onSearch()">Search</button>
+
+      <button
+        class="search-button"
+        type="button"
+        (click)="onSearch()"
+      >
+        Search
+      </button>
     </div>
 
     <div class="filter-section">
       <label for="statusFilter">Filter by Status:</label>
+
       <select
         id="statusFilter"
         [(ngModel)]="statusFilter"
         (ngModelChange)="onStatusFilterChange()"
       >
         <option value="">All Statuses</option>
-        <option *ngFor="let status of statusOptions" [value]="status">
+
+        <option
+          *ngFor="let status of statusOptions"
+          [value]="status"
+        >
           {{ status }}
         </option>
       </select>
     </div>
   </div>
 
+  <!-- TABLE FIRST -->
   <div class="table-wrapper">
     <table class="issues-table">
       <thead>
         <tr>
-          <th (click)="onSort('section')" class="sortable">
-            Section <span class="sort-icon">{{ getSortIcon('section') }}</span>
+          <th
+            (click)="onSort('responsiblePerson')"
+            class="sortable"
+          >
+            Responsible Person
+            <span class="sort-icon">
+              {{ getSortIcon('responsiblePerson') }}
+            </span>
           </th>
-          <th (click)="onSort('equipment')" class="sortable">
-            Equipment <span class="sort-icon">{{ getSortIcon('equipment') }}</span>
+
+          <th
+            (click)="onSort('section')"
+            class="sortable"
+          >
+            Section
+            <span class="sort-icon">
+              {{ getSortIcon('section') }}
+            </span>
           </th>
-          <th (click)="onSort('problemIssue')" class="sortable">
-            Problem / Issue <span class="sort-icon">{{ getSortIcon('problemIssue') }}</span>
+
+          <th
+            (click)="onSort('equipment')"
+            class="sortable"
+          >
+            Equipment
+            <span class="sort-icon">
+              {{ getSortIcon('equipment') }}
+            </span>
           </th>
-          <th (click)="onSort('criticality')" class="sortable">
-            Criticality <span class="sort-icon">{{ getSortIcon('criticality') }}</span>
+
+          <th
+            (click)="onSort('problemIssue')"
+            class="sortable"
+          >
+            Problem / Issue
+            <span class="sort-icon">
+              {{ getSortIcon('problemIssue') }}
+            </span>
           </th>
-          <th (click)="onSort('responsiblePerson')" class="sortable">
-            Responsible <span class="sort-icon">{{ getSortIcon('responsiblePerson') }}</span>
+
+          <th
+            (click)="onSort('comments')"
+            class="sortable"
+          >
+            Comments
+            <span class="sort-icon">
+              {{ getSortIcon('comments') }}
+            </span>
           </th>
-          <th (click)="onSort('dueDate')" class="sortable">
-            Due Date <span class="sort-icon">{{ getSortIcon('dueDate') }}</span>
+
+          <th
+            (click)="onSort('dueDate')"
+            class="sortable"
+          >
+            Due Date
+            <span class="sort-icon">
+              {{ getSortIcon('dueDate') }}
+            </span>
           </th>
-          <th (click)="onSort('status')" class="sortable">
-            Status <span class="sort-icon">{{ getSortIcon('status') }}</span>
-          </th>
-          <th class="actions-column">Actions</th>
         </tr>
       </thead>
+
       <tbody>
-        <tr *ngFor="let issue of filteredIssues" [class]="'status-' + issue.status.toLowerCase().replace(' ', '-')">
+        <tr
+          *ngFor="let issue of filteredIssues"
+          [ngClass]="getStatusClass(issue.status)"
+        >
+          <td>{{ issue.responsiblePerson }}</td>
           <td>{{ issue.section }}</td>
           <td>{{ issue.equipment }}</td>
           <td class="issue-text">{{ issue.problemIssue }}</td>
-          <td>
-            <span class="criticality-badge" [class]="'crit-' + issue.criticality.toLowerCase()">
-              {{ issue.criticality }}
-            </span>
-          </td>
-          <td>{{ issue.responsiblePerson }}</td>
+          <td class="issue-text">{{ issue.comments }}</td>
           <td>{{ issue.dueDate | date: 'MMM d, y' }}</td>
-          <td>
-            <span class="status-badge" [class]="'status-' + issue.status.toLowerCase().replace(' ', '-')">
-              {{ issue.status }}
-            </span>
-          </td>
-          <td class="actions-cell">
-            <div class="action-buttons">
-              <button class="action-button view" title="View issue" (click)="viewIssue(issue)">👁️</button>
-              <button class="action-button edit" title="Update issue" (click)="updateIssue(issue)">✏️</button>
-              <button class="action-button delete" title="Delete issue" (click)="deleteIssue(issue)">🗑️</button>
-            </div>
+        </tr>
+
+        <tr *ngIf="filteredIssues.length === 0">
+          <td
+            colspan="6"
+            class="empty-state"
+          >
+            No maintenance issues found.
           </td>
         </tr>
       </tbody>
     </table>
   </div>
 
+  <!-- PAGINATION -->
   <div class="pagination">
-    <button [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)">
+    <button
+      type="button"
+      [disabled]="currentPage === 1"
+      (click)="goToPage(currentPage - 1)"
+    >
       Previous
     </button>
+
     <div class="page-info">
-      Page {{ currentPage }} of {{ totalPages }} ({{ totalItems }} total items)
+      Page {{ currentPage }} of {{ totalPages }}
+      ({{ totalItems }} total items)
     </div>
-    <button [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)">
+
+    <button
+      type="button"
+      [disabled]="currentPage === totalPages"
+      (click)="goToPage(currentPage + 1)"
+    >
       Next
     </button>
+  </div>
+
+  <!-- CHARTS AFTER TABLE -->
+  <div class="charts-section-title">
+    <h3>Action Tracker Analytics</h3>
+    <p>Charts below are based on the current search and filter results.</p>
+  </div>
+
+  <!-- CHARTS ROW 1 -->
+  <div class="charts-grid top-row">
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3>Count of Problem / Issue by Status</h3>
+        <p>Status distribution of all maintenance issues</p>
+      </div>
+
+      <div class="chart-container pie-container">
+        <canvas #statusPieCanvas></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3>Count of Problem / Issue per Section</h3>
+        <p>Number of maintenance issues grouped by plant section</p>
+      </div>
+
+      <div class="chart-container">
+        <canvas #sectionBarCanvas></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 2 -->
+  <div class="charts-grid second-row">
+    <div class="chart-card responsible-chart">
+      <div class="chart-header">
+        <h3>Count of Problem / Issue by Responsible Person</h3>
+        <p>Action load assigned to each responsible person</p>
+      </div>
+
+      <div class="chart-container responsible-container">
+        <canvas #responsibleBarCanvas></canvas>
+      </div>
+    </div>
   </div>
 </section>
