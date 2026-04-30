@@ -1,5 +1,6 @@
 import {
   AfterViewInit,
+  ChangeDetectorRef,
   Component,
   ElementRef,
   OnDestroy,
@@ -34,8 +35,8 @@ Chart.register(...registerables);
   styleUrls: ['./downtime-report.component.scss']
 })
 export class DowntimeReportComponent implements AfterViewInit, OnDestroy {
-  @ViewChild('sectionPieCanvas') sectionPieCanvas!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('departmentPieCanvas') departmentPieCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('sectionBarCanvas') sectionBarCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('departmentBarCanvas') departmentBarCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('reasonBarCanvas') reasonBarCanvas!: ElementRef<HTMLCanvasElement>;
 
   downtimeReports: DowntimeReport[] = [];
@@ -46,6 +47,9 @@ export class DowntimeReportComponent implements AfterViewInit, OnDestroy {
   importedFileName = '';
   searchText = '';
 
+  selectedStopDate = '';
+  selectedStartDate = '';
+
   currentPage = 1;
   pageSize = 10;
   totalItems = 0;
@@ -54,8 +58,8 @@ export class DowntimeReportComponent implements AfterViewInit, OnDestroy {
   sortColumn: keyof DowntimeReport | '' = '';
   sortDirection: 'asc' | 'desc' = 'asc';
 
-  private sectionPieChart?: Chart<'pie'>;
-  private departmentPieChart?: Chart<'pie'>;
+  private sectionBarChart?: Chart<'bar'>;
+  private departmentBarChart?: Chart<'bar'>;
   private reasonBarChart?: Chart<'bar'>;
 
   private readonly chartColors: string[] = [
@@ -79,15 +83,14 @@ export class DowntimeReportComponent implements AfterViewInit, OnDestroy {
     '#0ea5e9'
   ];
 
+  constructor(private cdr: ChangeDetectorRef) {}
+
   ngAfterViewInit(): void {
-    this.createCharts();
-    this.updateCharts([]);
+    this.rebuildCharts([]);
   }
 
   ngOnDestroy(): void {
-    this.sectionPieChart?.destroy();
-    this.departmentPieChart?.destroy();
-    this.reasonBarChart?.destroy();
+    this.destroyCharts();
   }
 
   onExcelFileSelected(event: Event): void {
@@ -111,29 +114,66 @@ export class DowntimeReportComponent implements AfterViewInit, OnDestroy {
 
       const workbook = XLSX.read(arrayBuffer, {
         type: 'array',
-        cellDates: true
+        cellDates: false,
+        cellFormula: true,
+        cellNF: true,
+        cellText: true
       });
 
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
 
-      const rows = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, {
+      const rows = XLSX.utils.sheet_to_json<any[]>(worksheet, {
+        header: 1,
         defval: '',
-        raw: false
+        raw: true
       });
 
+      const headerRowIndex = this.findHeaderRowIndex(rows);
+
+      if (headerRowIndex === -1) {
+        console.error('Could not find downtime report header row.');
+
+        this.downtimeReports = [];
+        this.filteredReports = [];
+        this.chartSourceReports = [];
+        this.totalItems = 0;
+        this.totalPages = 1;
+
+        this.rebuildCharts([]);
+
+        input.value = '';
+        return;
+      }
+
+      const headerMap = this.createHeaderMap(rows[headerRowIndex]);
+
       const importedReports = rows
-        .map((row, index) => this.mapExcelRowToDowntimeReport(row, index))
+        .slice(headerRowIndex + 1)
+        .map((row, index) => {
+          const excelRowIndex = headerRowIndex + 1 + index;
+
+          return this.mapExcelRowToDowntimeReport(
+            row,
+            index,
+            worksheet,
+            excelRowIndex,
+            headerMap
+          );
+        })
         .filter(report =>
           report.section ||
           report.department ||
           report.equipment ||
+          report.cause ||
           report.reason
         );
 
       this.downtimeReports = importedReports;
       this.currentPage = 1;
       this.searchText = '';
+      this.selectedStopDate = '';
+      this.selectedStartDate = '';
 
       this.applyFilters();
 
@@ -143,65 +183,322 @@ export class DowntimeReportComponent implements AfterViewInit, OnDestroy {
     reader.readAsArrayBuffer(file);
   }
 
-  private mapExcelRowToDowntimeReport(
-    row: Record<string, any>,
-    index: number
-  ): DowntimeReport {
-    const stopDateValue = this.getExcelValue(row, [
-      'StopDate',
-      'Stop Date',
-      'Stop date'
-    ]);
+  private findHeaderRowIndex(rows: any[][]): number {
+    return rows.findIndex(row => {
+      const normalized = row.map(cell => this.normalizeHeader(cell));
 
-    const startDateValue = this.getExcelValue(row, [
-      'StartDate',
-      'Start Date',
-      'Start date'
-    ]);
-
-    const downtimeHoursValue = this.getExcelColumnValue(row, 'AA');
-
-    return {
-      id: index + 1,
-      section: this.cleanString(this.getExcelValue(row, ['Section'])),
-      department: this.cleanString(this.getExcelValue(row, ['Department'])),
-      equipment: this.cleanString(this.getExcelValue(row, ['Equipment'])),
-      cause: this.cleanString(this.getExcelValue(row, ['Cause'])),
-      reason: this.cleanString(this.getExcelValue(row, ['Reason'])),
-      stopDate: this.parseExcelDate(stopDateValue),
-      startDate: this.parseExcelDate(startDateValue),
-      downtimeHours: this.parseNumber(downtimeHoursValue)
-    };
+      return (
+        normalized.includes('section') &&
+        normalized.includes('department') &&
+        normalized.includes('equipment')
+      );
+    });
   }
 
-  private getExcelColumnValue(row: Record<string, any>, columnLetter: string): any {
-    const keys = Object.keys(row);
+  private createHeaderMap(headerRow: any[]): Record<string, number> {
+    const map: Record<string, number> = {};
 
-    const columnIndex = XLSX.utils.decode_col(columnLetter);
+    headerRow.forEach((header, index) => {
+      const key = this.normalizeHeader(header);
 
-    if (keys[columnIndex] !== undefined) {
-      return row[keys[columnIndex]];
-    }
-
-    return '';
-  }
-
-  private getExcelValue(row: Record<string, any>, possibleKeys: string[]): any {
-    const normalizedRow: Record<string, any> = {};
-
-    Object.keys(row).forEach(key => {
-      normalizedRow[key.trim().toLowerCase()] = row[key];
+      if (key) {
+        map[key] = index;
+      }
     });
 
-    for (const key of possibleKeys) {
-      const value = normalizedRow[key.trim().toLowerCase()];
+    return map;
+  }
 
-      if (value !== undefined && value !== null && value !== '') {
-        return value;
+  private normalizeHeader(value: any): string {
+    return String(value || '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/[\/_.-]/g, '');
+  }
+
+  private getColumnIndex(
+    headerMap: Record<string, number>,
+    possibleHeaders: string[],
+    fallbackIndex: number
+  ): number {
+    for (const header of possibleHeaders) {
+      const key = this.normalizeHeader(header);
+
+      if (headerMap[key] !== undefined) {
+        return headerMap[key];
       }
     }
 
-    return '';
+    return fallbackIndex;
+  }
+
+  private mapExcelRowToDowntimeReport(
+    row: any[],
+    index: number,
+    worksheet: XLSX.WorkSheet,
+    excelRowIndex: number,
+    headerMap: Record<string, number>
+  ): DowntimeReport {
+    const sectionIndex = this.getColumnIndex(headerMap, ['Section'], 0);
+    const departmentIndex = this.getColumnIndex(headerMap, ['Department'], 1);
+    const equipmentIndex = this.getColumnIndex(headerMap, ['Equipment'], 2);
+    const causeIndex = this.getColumnIndex(headerMap, ['Cause'], 3);
+
+    const reasonIndex = this.getColumnIndex(
+      headerMap,
+      ['Reason', 'Remark', 'Reason/Remark', 'Reason Remark'],
+      4
+    );
+
+    const stopDateIndex = this.getColumnIndex(
+      headerMap,
+      ['StopDate', 'Stop Date'],
+      5
+    );
+
+    const startDateIndex = this.getColumnIndex(
+      headerMap,
+      ['StartDate', 'Start Date'],
+      6
+    );
+
+    const downtimeHoursIndex = this.getColumnIndex(
+      headerMap,
+      [
+        'Downtime hours',
+        'Downtime Hours',
+        'DowntimeHours',
+        'Down time hours',
+        'DownTimeHours',
+        'Hours'
+      ],
+      -1
+    );
+
+    const stopDate = this.parseExcelDate(row[stopDateIndex]);
+    const startDate = this.parseExcelDate(row[startDateIndex]);
+
+    let downtimeHours = this.getDowntimeHoursFromWorksheet(
+      worksheet,
+      excelRowIndex,
+      downtimeHoursIndex
+    );
+
+    if (downtimeHours === 0 && stopDate && startDate) {
+      downtimeHours = this.calculateDowntimeHours(stopDate, startDate);
+    }
+
+    return {
+      id: index + 1,
+      section: this.cleanString(row[sectionIndex]),
+      department: this.cleanString(row[departmentIndex]),
+      equipment: this.cleanString(row[equipmentIndex]),
+      cause: this.cleanString(row[causeIndex]),
+      reason: this.cleanString(row[reasonIndex]),
+      stopDate,
+      startDate,
+      downtimeHours
+    };
+  }
+
+  private getDowntimeHoursFromWorksheet(
+    worksheet: XLSX.WorkSheet,
+    zeroBasedRowIndex: number,
+    downtimeHoursIndex: number
+  ): number {
+    /*
+      Prefer the column found by the "Downtime hours" header.
+      If not found, fallback to column AA.
+    */
+    const columnIndex = downtimeHoursIndex >= 0
+      ? downtimeHoursIndex
+      : XLSX.utils.decode_col('AA');
+
+    const cellAddress = XLSX.utils.encode_cell({
+      r: zeroBasedRowIndex,
+      c: columnIndex
+    });
+
+    const cell = worksheet[cellAddress];
+
+    if (!cell) {
+      return 0;
+    }
+
+    return this.parseDowntimeHoursCell(cell);
+  }
+
+  private parseDowntimeHoursCell(cell: XLSX.CellObject): number {
+    const rawValue = cell.v;
+    const formattedValue = cell.w;
+    const numberFormat = String(cell.z || '').toLowerCase();
+
+    /*
+      Excel duration display examples:
+      "24:00"
+      "12:30"
+      "1:15:00"
+    */
+    if (formattedValue && String(formattedValue).includes(':')) {
+      const durationHours = this.parseDurationTextToHours(String(formattedValue));
+
+      if (durationHours > 0) {
+        return durationHours;
+      }
+    }
+
+    /*
+      Text examples:
+      "24"
+      "24 hrs"
+      "24 hours"
+    */
+    if (formattedValue) {
+      const parsedFormatted = this.parseNumber(formattedValue);
+
+      if (parsedFormatted > 0 && !String(formattedValue).includes(':')) {
+        return parsedFormatted;
+      }
+    }
+
+    /*
+      Excel may store duration as a fraction of a day:
+      1      = 24 hours
+      0.5    = 12 hours
+      0.0417 = 1 hour
+
+      Only multiply by 24 if the cell format looks like a duration/time format.
+    */
+    if (typeof rawValue === 'number') {
+      const looksLikeDuration =
+        numberFormat.includes('[h]') ||
+        numberFormat.includes('h:mm') ||
+        numberFormat.includes('hh:mm') ||
+        numberFormat.includes(':');
+
+      if (looksLikeDuration) {
+        return Number((rawValue * 24).toFixed(2));
+      }
+
+      return Number(rawValue.toFixed(2));
+    }
+
+    return this.parseNumber(rawValue);
+  }
+
+  private parseDurationTextToHours(value: string): number {
+    const cleanValue = value.trim();
+
+    const parts = cleanValue.split(':').map(part => Number(part));
+
+    if (parts.some(part => Number.isNaN(part))) {
+      return 0;
+    }
+
+    if (parts.length === 2) {
+      const [hours, minutes] = parts;
+
+      return Number((hours + minutes / 60).toFixed(2));
+    }
+
+    if (parts.length === 3) {
+      const [hours, minutes, seconds] = parts;
+
+      return Number((hours + minutes / 60 + seconds / 3600).toFixed(2));
+    }
+
+    return 0;
+  }
+
+  private parseExcelDate(value: any): Date | null {
+    if (value === undefined || value === null || value === '') {
+      return null;
+    }
+
+    if (value instanceof Date && !isNaN(value.getTime())) {
+      return this.toLocalDate(value);
+    }
+
+    if (typeof value === 'number') {
+      const parsed = XLSX.SSF.parse_date_code(value);
+
+      if (!parsed) {
+        return null;
+      }
+
+      return new Date(
+        parsed.y,
+        parsed.m - 1,
+        parsed.d,
+        parsed.H || 0,
+        parsed.M || 0,
+        parsed.S || 0
+      );
+    }
+
+    const text = String(value).trim();
+
+    if (!text) {
+      return null;
+    }
+
+    const isoDateOnly = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    if (isoDateOnly) {
+      return new Date(
+        Number(isoDateOnly[1]),
+        Number(isoDateOnly[2]) - 1,
+        Number(isoDateOnly[3]),
+        0,
+        0,
+        0
+      );
+    }
+
+    const ddMmYyyy = text.match(
+      /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/
+    );
+
+    if (ddMmYyyy) {
+      return new Date(
+        Number(ddMmYyyy[3]),
+        Number(ddMmYyyy[2]) - 1,
+        Number(ddMmYyyy[1]),
+        Number(ddMmYyyy[4] || 0),
+        Number(ddMmYyyy[5] || 0),
+        Number(ddMmYyyy[6] || 0)
+      );
+    }
+
+    const parsedDate = new Date(text);
+
+    if (!isNaN(parsedDate.getTime())) {
+      return this.toLocalDate(parsedDate);
+    }
+
+    return null;
+  }
+
+  private toLocalDate(date: Date): Date {
+    return new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+      date.getHours(),
+      date.getMinutes(),
+      date.getSeconds()
+    );
+  }
+
+  private calculateDowntimeHours(stopDate: Date, startDate: Date): number {
+    const milliseconds = startDate.getTime() - stopDate.getTime();
+
+    if (milliseconds <= 0) {
+      return 0;
+    }
+
+    return Number((milliseconds / 1000 / 60 / 60).toFixed(2));
   }
 
   private cleanString(value: any): string {
@@ -217,61 +514,38 @@ export class DowntimeReportComponent implements AfterViewInit, OnDestroy {
       return 0;
     }
 
-    const parsed = Number(String(value).replace(',', '.'));
-
-    return Number.isNaN(parsed) ? 0 : parsed;
-  }
-
-  private parseExcelDate(value: any): Date {
-    if (!value) {
-      return new Date();
-    }
-
-    if (value instanceof Date && !isNaN(value.getTime())) {
-      return value;
-    }
-
     if (typeof value === 'number') {
-      const parsed = XLSX.SSF.parse_date_code(value);
-
-      if (parsed) {
-        return new Date(
-          parsed.y,
-          parsed.m - 1,
-          parsed.d,
-          parsed.H || 0,
-          parsed.M || 0,
-          parsed.S || 0
-        );
-      }
+      return Number.isFinite(value) ? Number(value.toFixed(2)) : 0;
     }
 
-    const text = String(value).trim();
+    const cleanedValue = String(value)
+      .trim()
+      .replace(/\s/g, '')
+      .replace(',', '.')
+      .replace(/[^\d.-]/g, '');
 
-    const dateTimeMatch = text.match(
-      /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?$/
-    );
-
-    if (dateTimeMatch) {
-      const day = Number(dateTimeMatch[1]);
-      const month = Number(dateTimeMatch[2]);
-      const year = Number(dateTimeMatch[3]);
-      const hour = Number(dateTimeMatch[4] || 0);
-      const minute = Number(dateTimeMatch[5] || 0);
-
-      return new Date(year, month - 1, day, hour, minute);
+    if (!cleanedValue) {
+      return 0;
     }
 
-    const parsedDate = new Date(text);
+    const parsed = Number(cleanedValue);
 
-    if (!isNaN(parsedDate.getTime())) {
-      return parsedDate;
-    }
-
-    return new Date();
+    return Number.isNaN(parsed) ? 0 : Number(parsed.toFixed(2));
   }
 
   onSearch(): void {
+    this.currentPage = 1;
+    this.applyFilters();
+  }
+
+  onDateRangeFilterChange(): void {
+    this.currentPage = 1;
+    this.applyFilters();
+  }
+
+  clearDateRangeFilter(): void {
+    this.selectedStopDate = '';
+    this.selectedStartDate = '';
     this.currentPage = 1;
     this.applyFilters();
   }
@@ -289,6 +563,42 @@ export class DowntimeReportComponent implements AfterViewInit, OnDestroy {
         item.cause?.toLowerCase().includes(search) ||
         item.reason?.toLowerCase().includes(search)
       );
+    }
+
+    const filterStopDate = this.selectedStopDate
+      ? this.getDateInputStart(this.selectedStopDate)
+      : null;
+
+    const filterStartDate = this.selectedStartDate
+      ? this.getDateInputEnd(this.selectedStartDate)
+      : null;
+
+    if (filterStopDate || filterStartDate) {
+      results = results.filter(item => {
+        const rowStopDate = item.stopDate;
+        const rowStartDate = item.startDate;
+
+        if (!rowStopDate && !rowStartDate) {
+          return false;
+        }
+
+        const rowFrom = rowStopDate || rowStartDate;
+        const rowTo = rowStartDate || rowStopDate;
+
+        if (!rowFrom || !rowTo) {
+          return false;
+        }
+
+        if (filterStopDate && rowTo < filterStopDate) {
+          return false;
+        }
+
+        if (filterStartDate && rowFrom > filterStartDate) {
+          return false;
+        }
+
+        return true;
+      });
     }
 
     if (this.sortColumn) {
@@ -309,7 +619,20 @@ export class DowntimeReportComponent implements AfterViewInit, OnDestroy {
 
     this.filteredReports = results.slice(startIndex, endIndex);
 
-    this.updateCharts(results);
+    this.cdr.detectChanges();
+    this.rebuildCharts(results);
+  }
+
+  private getDateInputStart(dateText: string): Date {
+    const [year, month, day] = dateText.split('-').map(Number);
+
+    return new Date(year, month - 1, day, 0, 0, 0);
+  }
+
+  private getDateInputEnd(dateText: string): Date {
+    const [year, month, day] = dateText.split('-').map(Number);
+
+    return new Date(year, month - 1, day, 23, 59, 59);
   }
 
   onSort(column: keyof DowntimeReport): void {
@@ -359,114 +682,105 @@ export class DowntimeReportComponent implements AfterViewInit, OnDestroy {
     this.applyFilters();
   }
 
-  private createCharts(): void {
+  private rebuildCharts(data: DowntimeReport[]): void {
+    this.destroyCharts();
+
     if (
-      !this.sectionPieCanvas ||
-      !this.departmentPieCanvas ||
-      !this.reasonBarCanvas
+      !this.sectionBarCanvas?.nativeElement ||
+      !this.departmentBarCanvas?.nativeElement ||
+      !this.reasonBarCanvas?.nativeElement
     ) {
       return;
     }
 
-    const sectionCounts = this.countByField(this.chartSourceReports, 'section');
-    const departmentCounts = this.countByField(this.chartSourceReports, 'department');
-    const reasonCounts = this.countByField(this.chartSourceReports, 'reason');
+    const sectionSums = this.sumHoursByField(data, 'section');
+    const departmentSums = this.sumHoursByField(data, 'department');
+    const reasonSums = this.sumHoursByField(data, 'reason');
 
-    this.sectionPieChart = new Chart(this.sectionPieCanvas.nativeElement, {
-      type: 'pie',
-      data: {
-        labels: sectionCounts.labels,
-        datasets: [
-          {
-            data: sectionCounts.values,
-            backgroundColor: this.getColors(sectionCounts.labels.length),
-            borderColor: '#ffffff',
-            borderWidth: 2
-          }
-        ]
-      },
-      options: this.getPieChartOptions()
-    });
-
-    this.departmentPieChart = new Chart(this.departmentPieCanvas.nativeElement, {
-      type: 'pie',
-      data: {
-        labels: departmentCounts.labels,
-        datasets: [
-          {
-            data: departmentCounts.values,
-            backgroundColor: this.getColors(departmentCounts.labels.length),
-            borderColor: '#ffffff',
-            borderWidth: 2
-          }
-        ]
-      },
-      options: this.getPieChartOptions()
-    });
-
-    this.reasonBarChart = new Chart(this.reasonBarCanvas.nativeElement, {
+    this.sectionBarChart = new Chart(this.sectionBarCanvas.nativeElement, {
       type: 'bar',
       data: {
-        labels: reasonCounts.labels,
+        labels: sectionSums.labels,
         datasets: [
           {
-            label: 'Downtime Count',
-            data: reasonCounts.values,
-            backgroundColor: this.getColors(reasonCounts.labels.length),
-            borderColor: this.getColors(reasonCounts.labels.length),
+            label: 'Total Downtime Hours',
+            data: sectionSums.values,
+            backgroundColor: this.getColors(sectionSums.labels.length),
+            borderColor: this.getColors(sectionSums.labels.length),
             borderWidth: 1,
             borderRadius: 8
           }
         ]
       },
-      options: this.getBarChartOptions()
+      options: this.getHoursBarChartOptions()
+    });
+
+    this.departmentBarChart = new Chart(this.departmentBarCanvas.nativeElement, {
+      type: 'bar',
+      data: {
+        labels: departmentSums.labels,
+        datasets: [
+          {
+            label: 'Total Downtime Hours',
+            data: departmentSums.values,
+            backgroundColor: this.getColors(departmentSums.labels.length),
+            borderColor: this.getColors(departmentSums.labels.length),
+            borderWidth: 1,
+            borderRadius: 8
+          }
+        ]
+      },
+      options: this.getHoursBarChartOptions()
+    });
+
+    this.reasonBarChart = new Chart(this.reasonBarCanvas.nativeElement, {
+      type: 'bar',
+      data: {
+        labels: reasonSums.labels,
+        datasets: [
+          {
+            label: 'Total Downtime Hours',
+            data: reasonSums.values,
+            backgroundColor: this.getColors(reasonSums.labels.length),
+            borderColor: this.getColors(reasonSums.labels.length),
+            borderWidth: 1,
+            borderRadius: 8
+          }
+        ]
+      },
+      options: this.getHoursBarChartOptions()
     });
   }
 
-  private updateCharts(data: DowntimeReport[]): void {
-    const sectionCounts = this.countByField(data, 'section');
-    const departmentCounts = this.countByField(data, 'department');
-    const reasonCounts = this.countByField(data, 'reason');
+  private destroyCharts(): void {
+    this.sectionBarChart?.destroy();
+    this.departmentBarChart?.destroy();
+    this.reasonBarChart?.destroy();
 
-    if (this.sectionPieChart) {
-      this.sectionPieChart.data.labels = sectionCounts.labels;
-      this.sectionPieChart.data.datasets[0].data = sectionCounts.values;
-      this.sectionPieChart.data.datasets[0].backgroundColor = this.getColors(sectionCounts.labels.length);
-      this.sectionPieChart.update();
-    }
-
-    if (this.departmentPieChart) {
-      this.departmentPieChart.data.labels = departmentCounts.labels;
-      this.departmentPieChart.data.datasets[0].data = departmentCounts.values;
-      this.departmentPieChart.data.datasets[0].backgroundColor = this.getColors(departmentCounts.labels.length);
-      this.departmentPieChart.update();
-    }
-
-    if (this.reasonBarChart) {
-      this.reasonBarChart.data.labels = reasonCounts.labels;
-      this.reasonBarChart.data.datasets[0].data = reasonCounts.values;
-      this.reasonBarChart.data.datasets[0].backgroundColor = this.getColors(reasonCounts.labels.length);
-      this.reasonBarChart.data.datasets[0].borderColor = this.getColors(reasonCounts.labels.length);
-      this.reasonBarChart.update();
-    }
+    this.sectionBarChart = undefined;
+    this.departmentBarChart = undefined;
+    this.reasonBarChart = undefined;
   }
 
-  private countByField(
+  private sumHoursByField(
     data: DowntimeReport[],
     field: keyof DowntimeReport
   ): { labels: string[]; values: number[] } {
-    const counts: Record<string, number> = {};
+    const sums: Record<string, number> = {};
 
     data.forEach(item => {
-      const value = item[field];
-      const key = String(value || 'Unknown').trim() || 'Unknown';
+      const label = String(item[field] || 'Unknown').trim() || 'Unknown';
+      const hours = Number(item.downtimeHours) || 0;
 
-      counts[key] = (counts[key] || 0) + 1;
+      sums[label] = (sums[label] || 0) + hours;
     });
 
+    const sortedEntries = Object.entries(sums)
+      .sort((a, b) => b[1] - a[1]);
+
     return {
-      labels: Object.keys(counts),
-      values: Object.values(counts)
+      labels: sortedEntries.map(([label]) => label),
+      values: sortedEntries.map(([, value]) => Number(value.toFixed(2)))
     };
   }
 
@@ -476,35 +790,11 @@ export class DowntimeReportComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  private getPieChartOptions(): ChartConfiguration<'pie'>['options'] {
+  private getHoursBarChartOptions(): ChartConfiguration<'bar'>['options'] {
     return {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            boxWidth: 14,
-            padding: 16
-          }
-        },
-        tooltip: {
-          callbacks: {
-            label: (context) => {
-              const label = context.label || '';
-              const value = context.parsed || 0;
-              return `${label}: ${value}`;
-            }
-          }
-        }
-      }
-    };
-  }
-
-  private getBarChartOptions(): ChartConfiguration<'bar'>['options'] {
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
+      animation: false,
       plugins: {
         legend: {
           display: false
@@ -512,7 +802,8 @@ export class DowntimeReportComponent implements AfterViewInit, OnDestroy {
         tooltip: {
           callbacks: {
             label: (context) => {
-              return `Count: ${context.parsed.y}`;
+              const value = Number(context.parsed.y || 0).toFixed(2);
+              return `Hours: ${value}`;
             }
           }
         }
@@ -530,6 +821,10 @@ export class DowntimeReportComponent implements AfterViewInit, OnDestroy {
         },
         y: {
           beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Total Downtime Hours'
+          },
           ticks: {
             precision: 0
           }
@@ -574,7 +869,7 @@ export class DowntimeReportComponent implements AfterViewInit, OnDestroy {
       { header: 'Department', key: 'department', width: 24 },
       { header: 'Equipment', key: 'equipment', width: 24 },
       { header: 'Cause', key: 'cause', width: 35 },
-      { header: 'Reason', key: 'reason', width: 40 },
+      { header: 'Reason / Remark', key: 'reason', width: 40 },
       { header: 'StopDate', key: 'stopDate', width: 22 },
       { header: 'StartDate', key: 'startDate', width: 22 },
       { header: 'Downtime hours', key: 'downtimeHours', width: 18 }
@@ -587,8 +882,8 @@ export class DowntimeReportComponent implements AfterViewInit, OnDestroy {
         equipment: item.equipment || '',
         cause: item.cause || '',
         reason: item.reason || '',
-        stopDate: item.stopDate ? new Date(item.stopDate) : '',
-        startDate: item.startDate ? new Date(item.startDate) : '',
+        stopDate: item.stopDate || '',
+        startDate: item.startDate || '',
         downtimeHours: item.downtimeHours ?? 0
       });
     });
@@ -682,29 +977,29 @@ export class DowntimeReportComponent implements AfterViewInit, OnDestroy {
       color: { argb: 'FF64748B' }
     };
 
-    worksheet.getCell('B5').value = 'Downtime by Section';
+    worksheet.getCell('B5').value = 'Sum of Downtime Hours by Section';
     worksheet.getCell('B5').font = {
       bold: true,
       size: 13,
       color: { argb: 'FF0F172A' }
     };
 
-    worksheet.getCell('H5').value = 'Downtime by Department';
+    worksheet.getCell('H5').value = 'Sum of Downtime Hours by Department';
     worksheet.getCell('H5').font = {
       bold: true,
       size: 13,
       color: { argb: 'FF0F172A' }
     };
 
-    worksheet.getCell('B28').value = 'Downtime by Reason';
+    worksheet.getCell('B28').value = 'Sum of Downtime Hours by Reason / Remark';
     worksheet.getCell('B28').font = {
       bold: true,
       size: 13,
       color: { argb: 'FF0F172A' }
     };
 
-    const sectionImage = this.getCanvasImageBase64(this.sectionPieCanvas);
-    const departmentImage = this.getCanvasImageBase64(this.departmentPieCanvas);
+    const sectionImage = this.getCanvasImageBase64(this.sectionBarCanvas);
+    const departmentImage = this.getCanvasImageBase64(this.departmentBarCanvas);
     const reasonImage = this.getCanvasImageBase64(this.reasonBarCanvas);
 
     if (sectionImage) {
@@ -715,7 +1010,7 @@ export class DowntimeReportComponent implements AfterViewInit, OnDestroy {
 
       worksheet.addImage(imageId, {
         tl: { col: 1, row: 6 },
-        ext: { width: 520, height: 320 }
+        ext: { width: 560, height: 320 }
       });
     }
 
@@ -727,7 +1022,7 @@ export class DowntimeReportComponent implements AfterViewInit, OnDestroy {
 
       worksheet.addImage(imageId, {
         tl: { col: 7, row: 6 },
-        ext: { width: 520, height: 320 }
+        ext: { width: 560, height: 320 }
       });
     }
 
@@ -752,5 +1047,23 @@ export class DowntimeReportComponent implements AfterViewInit, OnDestroy {
     }
 
     return canvasRef.nativeElement.toDataURL('image/png');
+  }
+
+  private debugDowntimeCell(
+    worksheet: XLSX.WorkSheet,
+    zeroBasedRowIndex: number,
+    columnIndex: number
+  ): void {
+    const cellAddress = XLSX.utils.encode_cell({
+      r: zeroBasedRowIndex,
+      c: columnIndex
+    });
+
+    const cell = worksheet[cellAddress];
+
+    console.log('Downtime cell debug:', {
+      cellAddress,
+      cell
+    });
   }
 }

@@ -6,7 +6,7 @@
     </div>
 
     <p class="page-copy">
-      Import a downtime spreadsheet, analyse downtime by section, department and reason, then export the report.
+      Import a downtime spreadsheet, analyse downtime hours by section, department and reason, then export the report.
     </p>
   </div>
 
@@ -59,72 +59,78 @@
         Search
       </button>
     </div>
+
+    <div class="date-filter-box">
+      <div class="date-field">
+        <label for="stopDateFilter">StopDate From</label>
+        <input
+          id="stopDateFilter"
+          type="date"
+          [(ngModel)]="selectedStopDate"
+          (ngModelChange)="onDateRangeFilterChange()"
+        />
+      </div>
+
+      <div class="date-field">
+        <label for="startDateFilter">StartDate To</label>
+        <input
+          id="startDateFilter"
+          type="date"
+          [(ngModel)]="selectedStartDate"
+          (ngModelChange)="onDateRangeFilterChange()"
+        />
+      </div>
+
+      <button
+        type="button"
+        class="clear-filter-button"
+        (click)="clearDateRangeFilter()"
+      >
+        Clear Dates
+      </button>
+    </div>
   </div>
 
   <div class="table-wrapper">
     <table class="downtime-table">
       <thead>
         <tr>
-          <th
-            class="sortable"
-            (click)="onSort('section')"
-          >
+          <th class="sortable" (click)="onSort('section')">
             Section
             <span class="sort-icon">{{ getSortIcon('section') }}</span>
           </th>
 
-          <th
-            class="sortable"
-            (click)="onSort('department')"
-          >
+          <th class="sortable" (click)="onSort('department')">
             Department
             <span class="sort-icon">{{ getSortIcon('department') }}</span>
           </th>
 
-          <th
-            class="sortable"
-            (click)="onSort('equipment')"
-          >
+          <th class="sortable" (click)="onSort('equipment')">
             Equipment
             <span class="sort-icon">{{ getSortIcon('equipment') }}</span>
           </th>
 
-          <th
-            class="sortable"
-            (click)="onSort('cause')"
-          >
+          <th class="sortable" (click)="onSort('cause')">
             Cause
             <span class="sort-icon">{{ getSortIcon('cause') }}</span>
           </th>
 
-          <th
-            class="sortable"
-            (click)="onSort('reason')"
-          >
-            Reason
+          <th class="sortable" (click)="onSort('reason')">
+            Reason / Remark
             <span class="sort-icon">{{ getSortIcon('reason') }}</span>
           </th>
 
-          <th
-            class="sortable"
-            (click)="onSort('stopDate')"
-          >
+          <th class="sortable" (click)="onSort('stopDate')">
             StopDate
             <span class="sort-icon">{{ getSortIcon('stopDate') }}</span>
           </th>
 
-          <th
-            class="sortable"
-            (click)="onSort('startDate')"
-          >
+          <th class="sortable" (click)="onSort('startDate')">
             StartDate
             <span class="sort-icon">{{ getSortIcon('startDate') }}</span>
           </th>
 
-          <th
-            class="sortable"
-            (click)="onSort('downtimeHours')"
-          >
+          <th class="sortable" (click)="onSort('downtimeHours')">
             Downtime hours
             <span class="sort-icon">{{ getSortIcon('downtimeHours') }}</span>
           </th>
@@ -133,21 +139,27 @@
 
       <tbody>
         <tr *ngFor="let item of filteredReports">
-          <td>{{ item.section }}</td>
-          <td>{{ item.department }}</td>
-          <td>{{ item.equipment }}</td>
-          <td class="text-cell">{{ item.cause }}</td>
-          <td class="text-cell">{{ item.reason }}</td>
-          <td>{{ item.stopDate | date: 'MMM d, y HH:mm' }}</td>
-          <td>{{ item.startDate | date: 'MMM d, y HH:mm' }}</td>
-          <td>{{ item.downtimeHours | number: '1.2-2' }}</td>
+          <td>{{ item.section || '-' }}</td>
+          <td>{{ item.department || '-' }}</td>
+          <td>{{ item.equipment || '-' }}</td>
+          <td class="text-cell">{{ item.cause || '-' }}</td>
+          <td class="text-cell">{{ item.reason || '-' }}</td>
+
+          <td>
+            {{ item.stopDate ? (item.stopDate | date: 'MMM d, y HH:mm') : '-' }}
+          </td>
+
+          <td>
+            {{ item.startDate ? (item.startDate | date: 'MMM d, y HH:mm') : '-' }}
+          </td>
+
+          <td>
+            {{ item.downtimeHours | number: '1.2-2' }}
+          </td>
         </tr>
 
         <tr *ngIf="filteredReports.length === 0">
-          <td
-            colspan="8"
-            class="empty-state"
-          >
+          <td colspan="8" class="empty-state">
             No downtime records found. Import the spreadsheet to load data.
           </td>
         </tr>
@@ -180,29 +192,31 @@
 
   <div class="charts-section-title">
     <h3>Downtime Analytics</h3>
-    <p>Charts below are based on the current search results.</p>
+    <p>
+      Charts below show the sum of downtime hours based on the current search and StopDate / StartDate filters.
+    </p>
   </div>
 
   <div class="charts-grid top-row">
     <div class="chart-card">
       <div class="chart-header">
-        <h3>Downtime by Section</h3>
-        <p>Count of downtime records grouped by section</p>
+        <h3>Sum of Downtime Hours by Section</h3>
+        <p>Total downtime hours grouped by section.</p>
       </div>
 
-      <div class="chart-container pie-container">
-        <canvas #sectionPieCanvas></canvas>
+      <div class="chart-container">
+        <canvas #sectionBarCanvas></canvas>
       </div>
     </div>
 
     <div class="chart-card">
       <div class="chart-header">
-        <h3>Downtime by Department</h3>
-        <p>Count of downtime records grouped by department</p>
+        <h3>Sum of Downtime Hours by Department</h3>
+        <p>Total downtime hours grouped by department.</p>
       </div>
 
-      <div class="chart-container pie-container">
-        <canvas #departmentPieCanvas></canvas>
+      <div class="chart-container">
+        <canvas #departmentBarCanvas></canvas>
       </div>
     </div>
   </div>
@@ -210,8 +224,8 @@
   <div class="charts-grid second-row">
     <div class="chart-card reason-chart">
       <div class="chart-header">
-        <h3>Downtime by Reason</h3>
-        <p>Count of downtime records grouped by reason</p>
+        <h3>Sum of Downtime Hours by Reason / Remark</h3>
+        <p>Total downtime hours grouped by reason or remark.</p>
       </div>
 
       <div class="chart-container reason-container">

@@ -77,7 +77,8 @@
 
 .import-button,
 .export-button,
-.search-button {
+.search-button,
+.clear-filter-button {
   height: 42px;
   display: inline-flex;
   align-items: center;
@@ -150,6 +151,55 @@
   background: #1d4ed8;
 }
 
+/* DATE RANGE FILTER */
+
+.date-filter-box {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.date-field label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.date-field input {
+  height: 42px;
+  padding: 0 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0f172a;
+  outline: none;
+}
+
+.date-field input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.clear-filter-button {
+  background: #64748b;
+  color: #ffffff;
+}
+
+.clear-filter-button:hover {
+  background: #475569;
+}
+
+/* TABLE */
+
 .table-wrapper {
   overflow-x: auto;
   background: #ffffff;
@@ -161,7 +211,7 @@
 .downtime-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1100px;
+  min-width: 1300px;
 }
 
 .downtime-table thead {
@@ -220,6 +270,8 @@
   font-weight: 600;
 }
 
+/* PAGINATION */
+
 .pagination {
   display: flex;
   justify-content: flex-end;
@@ -254,6 +306,8 @@
   color: #475569;
   font-weight: 600;
 }
+
+/* CHARTS */
 
 .charts-section-title {
   margin: 2rem 0 1rem;
@@ -321,13 +375,11 @@
   height: 320px;
 }
 
-.pie-container {
-  height: 300px;
-}
-
 .reason-container {
   height: 380px;
 }
+
+/* RESPONSIVE */
 
 @media (max-width: 992px) {
   .downtime-report-page {
@@ -354,13 +406,29 @@
   }
 
   .import-button,
-  .export-button {
+  .export-button,
+  .search-button,
+  .clear-filter-button {
     width: 100%;
   }
 
   .search-box {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .date-filter-box {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .date-field {
+    width: 100%;
+  }
+
+  .date-field input {
+    width: 100%;
   }
 
   .top-row {

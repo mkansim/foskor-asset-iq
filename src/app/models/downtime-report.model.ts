@@ -5,7 +5,7 @@ export interface DowntimeReport {
   equipment: string;
   cause: string;
   reason: string;
-  stopDate: Date;
-  startDate: Date;
+  stopDate: Date | null;
+  startDate: Date | null;
   downtimeHours: number;
 }
