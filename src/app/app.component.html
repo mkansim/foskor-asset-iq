@@ -14,14 +14,14 @@
     </div>
 
     <nav class="nav-links" aria-label="Primary navigation">
-      <a routerLink="/reports" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <!-- <a routerLink="/reports" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
         <span class="nav-icon">📋</span>
         <span class="nav-label" *ngIf="!sidebarCollapsed">Power BI Live</span>
-      </a>
+      </a> -->
 
       <a routerLink="/reports/reliability-kpis" routerLinkActive="active">
         <span class="nav-icon">📊</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">KPI Dashboard</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Compliance</span>
       </a>
 
       <!-- DATA MANAGEMENT COLLAPSIBLE TAB -->
@@ -66,7 +66,7 @@
 
       <a routerLink="/downtime-report" routerLinkActive="active">
         <span class="nav-icon">⏱️</span>
-        <span class="nav-label" *ngIf="!sidebarCollapsed">Downtime Report</span>
+        <span class="nav-label" *ngIf="!sidebarCollapsed">Downtime MES</span>
       </a>
 
       <!-- <a routerLink="/overview" routerLinkActive="active">
